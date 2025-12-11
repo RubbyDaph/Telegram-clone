@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Main.qml</file>
+        <file>Components/ChatsDelegate.qml</file>
+    </qresource>
+</RCC>

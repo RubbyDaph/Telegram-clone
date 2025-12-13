@@ -80,15 +80,35 @@ Window {
                     Layout.fillWidth: true
                     focus: true
                     model: userController.chatList
+                    spacing: 3
 
                     delegate: ChatsDelegate {
+                        id: delegateItem
+
+                        property bool isHovered: false
+
+                        color: {
+                            if (model.chatId === userController.currentChatId) {
+                                return selectedColor;
+                            } else if (isHovered) {
+                                return hoveredColor;
+                            } else {
+                                return normalColor;
+                            }
+                        }
+                        width: ListView.view.width
+
                         MouseArea {
                             anchors.fill: parent
+                            hoverEnabled: true
 
                             onClicked: {
                                 userController.SetCurrentChat(model.chatId);
                                 curentChat.selectedChatId = model.chatId;
                             }
+                            
+                            onEntered: delegateItem.isHovered = true
+                            onExited: delegateItem.isHovered = false
                         }
                     }
                 }

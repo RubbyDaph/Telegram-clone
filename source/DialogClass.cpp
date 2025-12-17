@@ -45,16 +45,14 @@ void DialogModel::AddMessage(MessageClass *message)
 
 void DialogModel::OnDialogModelChanged(DialogModel *dialogModel)
 {
-    if (this == dialogModel) return; // Это тот же объект
+    if (this == dialogModel) return;
 
-    // Очищаем текущие сообщения
     if (!m_messages.empty()) {
         beginRemoveRows(QModelIndex(), 0, m_messages.size() - 1);
         m_messages.clear();
         endRemoveRows();
     }
 
-    // Добавляем сообщения из нового диалога
     if (!dialogModel->m_messages.empty()) {
         beginInsertRows(QModelIndex(), 0, dialogModel->m_messages.size() - 1);
         for (auto* message : dialogModel->m_messages) {

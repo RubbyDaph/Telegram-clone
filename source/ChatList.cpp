@@ -56,7 +56,6 @@ DialogModel* ChatList::getDialogModel(quint64 chatId)
 
     for (int i = 0; i < m_chats.size(); ++i) {
         if (m_chats[i].id == chatId) {
-            qDebug() << "Found chat at index:" << i;
             return m_chats[i].dialogModel;
         }
     }

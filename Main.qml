@@ -43,7 +43,9 @@ Window {
                     Layout.minimumHeight: 79
                     Layout.preferredHeight: 79
 
-                    Rectangle {
+                    Button {
+                        id: addUserButton
+
                         Layout.leftMargin: 10
                         Layout.maximumHeight: 20
                         Layout.maximumWidth: 20
@@ -51,7 +53,17 @@ Window {
                         Layout.minimumWidth: 20
                         Layout.preferredHeight: 20
                         Layout.preferredWidth: 20
-                        color: "#1F1F2F"
+
+                        background: Rectangle {
+                            color: "#1F1F2F"
+                        }
+
+                        onClicked: {
+                            userAddLoader.active = true;
+                            if (userAddLoader.status === Loader.Ready) {
+                                userAddLoader.item.open();
+                            }
+                        }
                     }
                     Rectangle {
                         Layout.fillWidth: true
@@ -106,7 +118,6 @@ Window {
                                 userController.SetCurrentChat(model.chatId);
                                 curentChat.selectedChatId = model.chatId;
                             }
-                            
                             onEntered: delegateItem.isHovered = true
                             onExited: delegateItem.isHovered = false
                         }
@@ -277,6 +288,19 @@ Window {
                     }
                 }
             }
+        }
+    }
+    Loader {
+        id: userAddLoader
+
+        active: false
+        source: "Pages/AddUser.qml"
+
+        onLoaded: {
+            item.parent = window.contentItem
+            item.closed.connect(function () {
+                userAddLoader.active = false
+            })
         }
     }
 }

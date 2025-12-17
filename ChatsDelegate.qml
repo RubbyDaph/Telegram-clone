@@ -18,9 +18,30 @@ Rectangle {
         anchors.fill: parent
 
         Rectangle {
+            clip: true
             Layout.preferredHeight: 44
             Layout.preferredWidth: 44
             radius: 44
+            color: chatDelegate.normalColor
+            Rectangle{
+                id: head
+                opacity: 1
+                anchors.centerIn: parent
+                anchors.bottomMargin: 5
+                height: 20
+                width: 20
+                radius: 10
+
+            }
+            Rectangle{
+                id: body
+                opacity: 1
+                width: 30
+                radius: 10
+                height: 30
+                x: 7
+                y: width + 2
+            }
         }
         ColumnLayout {
             Layout.fillWidth: true

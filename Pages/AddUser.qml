@@ -7,7 +7,8 @@ Dialog {
     id: addContact
 
     property color dialogBackground: '#141521'
-
+    property alias contactName: nameInput.text
+    signal nameSubmitted(string name)
     anchors.centerIn: Overlay.overlay
     closePolicy: Popup.CloseOnEscape
     focus: true
@@ -22,7 +23,7 @@ Dialog {
     }
     background: Rectangle {
         anchors.fill: parent
-        color: dialogBackground
+        color: addContact.dialogBackground
     }
     contentItem: ColumnLayout {
         id: contentLayout
@@ -64,7 +65,7 @@ Dialog {
             Layout.alignment: Qt.AlignCenter | Qt.AlignVCenter
             Layout.preferredHeight: 35
             Layout.preferredWidth: 120
-            text: "Confirm"
+            property string textHolder: "Confirm"
 
             background: Rectangle {
                 id: buttonBackground
@@ -74,8 +75,13 @@ Dialog {
             contentItem: Text {
                 color: "white"
                 horizontalAlignment: Text.AlignHCenter
-                text: parent.text
+                text: confirmButton.textHolder
                 verticalAlignment: Text.AlignVCenter
+            }
+            onClicked:{
+                    addContact.nameSubmitted(nameInput.text)
+                    nameInput.clear()
+                    addContact.close()
             }
         }
         Item {
@@ -91,7 +97,7 @@ Dialog {
 
         background: Rectangle {
             anchors.fill: parent
-            color: dialogBackground
+            color: addContact.dialogBackground
         }
 
         RowLayout {
@@ -117,14 +123,14 @@ Dialog {
                 Layout.fillWidth: true
             }
             Button {
-                id: button
-
+                id: closeButton
+                onClicked: addContact.close()
                 Layout.preferredHeight: 20
                 Layout.preferredWidth: 20
 
                 background: Rectangle {
                     anchors.fill: parent
-                    color: button.hovered ? "red" : dialogBackground
+                    color: closeButton.hovered ? "red" : addContact.dialogBackground
                 }
 
                 Rectangle {

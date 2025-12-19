@@ -13,7 +13,6 @@ Window {
     title: qsTr("Telegrom")
     visible: true
     width: 650
-
     UserController {
         id: userController
 
@@ -262,7 +261,6 @@ Window {
                             MouseArea {
                                 anchors.fill: parent
 
-                                onClicked: userController.CreateChat("Anna")
                             }
                         }
                         Rectangle {
@@ -282,7 +280,10 @@ Window {
                             MouseArea {
                                 anchors.fill: parent
 
-                                onClicked: userController.SendMessage(messageTextInput.text)
+                                onClicked: {
+                                    userController.SendMessage(messageTextInput.text);
+                                    messageTextInput.clear();
+                                }
                             }
                         }
                     }
@@ -297,11 +298,15 @@ Window {
         source: "Pages/AddUser.qml"
 
         onLoaded: {
-            item.parent = window.contentItem
+            item.parent = window.contentItem;
             item.closed.connect(function () {
-                userAddLoader.active = false
-            })
+                userAddLoader.active = false;
+            });
+            item.nameSubmitted.connect(onNameSubmitted)
         }
+    }
+    function onNameSubmitted(textValue){
+        onClicked: userController.CreateChat(textValue)
     }
 }
 

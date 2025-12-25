@@ -33,6 +33,7 @@ public:
     Q_INVOKABLE DialogModel* getDialogModel(quint64 chatId);
     Q_INVOKABLE void updateLastMessage(int chatIndex, const QString &message, const QString &sender);
     Q_INVOKABLE int findChatByContactName(const QString &contactName);
+    Q_INVOKABLE QString getContactNameByID(quint64 chatId);
 public slots:
     void AddChat(const QString& contactName);
 public:

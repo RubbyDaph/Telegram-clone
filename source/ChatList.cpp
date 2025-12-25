@@ -82,3 +82,13 @@ int ChatList::findChatByContactName(const QString &contactName)
     return -1;
 }
 
+QString ChatList::getContactNameByID(quint64 chatId)
+{
+
+    for (int i = 0; i < m_chats.size(); ++i) {
+        if (m_chats[i].id == chatId) {
+            return m_chats[i].contactName;
+        }
+    }
+    return "";
+}

@@ -16,6 +16,7 @@ public:
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
     void AddMessage(MessageClass *message);
+    QString getContactName();
 
     enum Roles
     {

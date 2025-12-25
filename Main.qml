@@ -116,6 +116,7 @@ Window {
                             onClicked: {
                                 userController.SetCurrentChat(model.chatId);
                                 curentChat.selectedChatId = model.chatId;
+                                currentContactName.selectedChatId = model.chatId;
                             }
                             onEntered: delegateItem.isHovered = true
                             onExited: delegateItem.isHovered = false
@@ -162,12 +163,14 @@ Window {
                         }
                         ColumnLayout {
                             Label {
+                                id: currentContactName
+                                property int selectedChatId: -1
                                 color: "white"
-                                text: "name"
+                                text: selectedChatId >= 0 ? userController.chatList.getContactNameByID(selectedChatId) : ""
                             }
                             Label {
                                 color: "white"
-                                text: "last seen online"
+                                text: currentContactName.selectedChatId >= 0 ? "last seen online" : ""
                             }
                         }
                         Rectangle {
@@ -265,8 +268,6 @@ Window {
                         }
                         Rectangle {
                             id: sendButton
-
-                            property string message: "haha"
 
                             Layout.alignment: Qt.AlignBottom
                             Layout.bottomMargin: 10

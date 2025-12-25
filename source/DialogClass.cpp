@@ -62,4 +62,8 @@ void DialogModel::OnDialogModelChanged(DialogModel *dialogModel)
     }
 }
 
+QString DialogModel::getContactName()
+{
+    return m_contactName;
+}
 

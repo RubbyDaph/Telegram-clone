@@ -1,7 +1,5 @@
 #include "ChatList.h"
 
-quint64 ChatList::nextId = 1;
-
 
 int ChatList::rowCount(const QModelIndex &parent) const
 {
@@ -28,7 +26,7 @@ QVariant ChatList::data(const QModelIndex &index, int role) const
         case TimestampRole:
             return chat.timestamp;
         case ChatId:
-            return chat.id;
+            return chat.peerUuid;
         default:
             return QVariant();
     }
@@ -44,18 +42,66 @@ QHash<int, QByteArray> ChatList::roleNames() const
     return roles;
 }
 
-void ChatList::AddChat(const QString &contactName)
+int ChatList::findChatById(QString uuid)
 {
+    for (int i = 0; i < m_chats.size(); ++i) {
+        if (m_chats[i].peerUuid == uuid) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void ChatList::AddChat(const QString &identifier, bool isUuid, const QString& name)
+{
+    QString uuid;
+    QString displayName;
+
+    if (isUuid)
+    {
+        uuid = identifier;
+
+        if (!name.isEmpty())
+        {
+            displayName = name;
+        }
+        else
+        {
+            if (uuid.startsWith("temp_"))
+            {
+                displayName = "User (" + uuid.mid(5) + ")";
+            }
+            else if (uuid.startsWith("{"))
+            {
+                displayName = "User_" + uuid.mid(1, 8);
+            }
+            else
+            {
+                displayName = uuid;
+            }
+        }
+    }
+    else
+    {
+        displayName = identifier;
+        uuid = "local_" + QUuid::createUuid().toString();
+    }
+
+    if (findChatById(uuid) != -1)
+    {
+        return;
+    }
 
     beginInsertRows(QModelIndex(), m_chats.size(), m_chats.size());
-    m_chats.append(ChatItem(contactName));
+    m_chats.append(ChatItem(displayName, uuid));
     endInsertRows();
 }
-DialogModel* ChatList::getDialogModel(quint64 chatId)
+
+DialogModel* ChatList::getDialogModel(QString chatId)
 {
 
     for (int i = 0; i < m_chats.size(); ++i) {
-        if (m_chats[i].id == chatId) {
+        if (m_chats[i].peerUuid == chatId) {
             return m_chats[i].dialogModel;
         }
     }
@@ -72,21 +118,12 @@ void ChatList::updateLastMessage(int chatIndex, const QString &message, const QS
         emit dataChanged(modelIndex, modelIndex, {LastMessageRole, TimestampRole});
     }
 }
-int ChatList::findChatByContactName(const QString &contactName)
-{
-    for (int i = 0; i < m_chats.size(); ++i) {
-        if (m_chats[i].contactName == contactName) {
-            return i;
-        }
-    }
-    return -1;
-}
 
-QString ChatList::getContactNameByID(quint64 chatId)
+QString ChatList::getContactNameByID(QString chatId)
 {
 
     for (int i = 0; i < m_chats.size(); ++i) {
-        if (m_chats[i].id == chatId) {
+        if (m_chats[i].peerUuid == chatId) {
             return m_chats[i].contactName;
         }
     }

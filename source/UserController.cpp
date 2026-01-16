@@ -78,38 +78,35 @@ void UserController::SendMessage(const QString &message)
 }
 
 
-void UserController::OnMessageReceived(const QString& peerAddress, const QString& message, const QDateTime& timestamp)
+void UserController::OnMessageReceived(const QString& peerUuid, const QString& message, const QDateTime& timestamp)
 {
-    qDebug() << "Message received from" << peerAddress << ":" << message;
 
-    // Определяем имя отправителя на основе peerAddress
+    int chatIndex = chatList->findChatById(peerUuid);
+
+    DialogModel* targetDialogModel = nullptr;
+
+    if (chatIndex != -1) return;
+
     QString senderName;
 
-    if (peerAddress.startsWith("temp_")) {
-        // Временный ID (до hello-обмена) - показываем адрес
-        senderName = "User (" + peerAddress.mid(5) + ")";
-    } else if (peerAddress.startsWith("{")) {
-        // UUID в формате {aaaaaaaa-bbbb-...} - сокращаем для отображения
-        senderName = "User_" + peerAddress.mid(1, 8);
+    if (peerUuid.startsWith("temp_")) {
+        senderName = "User (" + peerUuid.mid(5) + ")";
+    } else if (peerUuid.startsWith("{")) {
+        senderName = "User_" + peerUuid.mid(1, 8);
     } else {
-        // Любой другой формат - используем как есть
-        senderName = peerAddress;
+        senderName = peerUuid;
     }
 
-    // Создаем объект сообщения (НЕ наше)
     MessageClass* receivedMessage = new MessageClass(
         senderName,
         message,
         timestamp.toString("hh:mm"),
-        false // isOwnMessage = false (не наше сообщение)
+        false
     );
-
-    // TODO: Здесь нужно найти правильный DialogModel для этого отправителя
-    // и добавить сообщение туда
-
-    // Если dialogModel существует, добавляем сообщение
-    if (dialogModel) {
+    
+    if (chatList->getDialogModel(peerUuid)) {
         dialogModel->AddMessage(receivedMessage);
+        chatList->updateLastMessage(chatIndex, message, senderName);
     }
 
     emit MessageReceived(message, senderName);

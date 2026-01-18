@@ -17,6 +17,11 @@ Window {
         id: userController
 
     }
+
+    Component.onCompleted:{
+        userController.StartMessaging()
+        autoConnectTimer.start()
+    }
     RowLayout {
         id: rowLayout
 

@@ -103,18 +103,13 @@ void UserController::OnMessageReceived(const QString& peerUuid, const QString& m
         timestamp.toString("hh:mm"),
         false
     );
-    
+
     if (chatList->getDialogModel(peerUuid)) {
         dialogModel->AddMessage(receivedMessage);
         chatList->updateLastMessage(chatIndex, message, senderName);
     }
 
     emit MessageReceived(message, senderName);
-}
-
-void UserController::OnMessageSent(const QString &sentMessage, const QString &messageID, bool isOwnMessage)
-{
-
 }
 
 void UserController::onPeerPresenceChanged(const QString& peerId, bool isOnline)
@@ -171,4 +166,9 @@ void UserController::OnPeerConnected(const QString &peerID, const QString &peerA
     chatList->AddChat(peerID, true, displayName);
 
     emit ConnectionStatusChange(true);
+}
+
+void UserController::OnPeerDisconnected(const QString &peerID, const QString &peerAddress)
+{
+
 }

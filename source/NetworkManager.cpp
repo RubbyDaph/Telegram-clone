@@ -381,3 +381,7 @@ void NetworkManager::SendHelloMessage(QTcpSocket* socket)
 
 }
 
+void NetworkManager::onUdpDataReceived()
+{
+
+}

@@ -28,7 +28,6 @@ public:
     QString GetUsername() const {return username;}
 private slots:
     void OnMessageReceived(const QString& peerUuid, const QString& message, const QDateTime& timestamp);
-    void OnMessageSent(const QString& sentMessage, const QString& messageID, bool isOwnMessage);
     void onPeerTypingStatusChanged(const QString& peerId, bool isTyping);
     void onPeerPresenceChanged(const QString& peerId, bool isOnline);
     void OnConnectionFail(const QString& reason);

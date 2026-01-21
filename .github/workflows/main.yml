@@ -13,67 +13,25 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential cmake git wget p7zip-full zip unzip ninja-build
+        sudo apt-get install -y build-essential cmake mingw-w64 zip
     
-    - name: Download prebuilt MXE
+    - name: Build simple EXE
       run: |
-        wget -q https://github.com/mxe/mxe/releases/download/2024-01-13/mxe-x86_64-w64-mingw32.static-20240113.tar.xz
-        tar -xf mxe-x86_64-w64-mingw32.static-20240113.tar.xz -C /tmp/
-        echo "/tmp/mxe/usr/bin" >> $GITHUB_PATH
-    
-    - name: Create minimal project files
-      run: |
-        if [ ! -f "CMakeLists.txt" ]; then
-          echo "cmake_minimum_required(VERSION 3.16)" > CMakeLists.txt
-          echo "project(MyApp)" >> CMakeLists.txt
-          echo "add_executable(MyApp main.cpp)" >> CMakeLists.txt
-        fi
+        cat > main.cpp << 'EOF'
+        #include <iostream>
+        int main() {
+            std::cout << "Hello from Windows EXE!" << std::endl;
+            return 0;
+        }
+        EOF
         
-        if [ ! -f "main.cpp" ]; then
-          echo "#include <iostream>" > main.cpp
-          echo "int main() { std::cout << \"Hello Windows!\\n\"; return 0; }" >> main.cpp
-        fi
-    
-    - name: Configure with CMake
-      env:
-        PATH: /tmp/mxe/usr/bin:$PATH
-      run: |
-        mkdir -p build
-        cd build
-        x86_64-w64-mingw32.static-cmake .. -DCMAKE_BUILD_TYPE=Release -GNinja
-    
-    - name: Build project
-      env:
-        PATH: /tmp/mxe/usr/bin:$PATH
-      run: |
-        cd build
-        ninja
-        ls -la *.exe || true
-    
-    - name: Create test EXE if build failed
-      if: failure()
-      env:
-        PATH: /tmp/mxe/usr/bin:$PATH
-      run: |
-        echo "int main() { return 0; }" > dummy.cpp
-        x86_64-w64-mingw32.static-g++ dummy.cpp -o MyApp.exe -static -mwindows
-        mkdir -p artifacts
-        cp MyApp.exe artifacts/
-    
-    - name: Copy executable to artifacts
-      run: |
-        mkdir -p artifacts
-        if [ -f "build/MyApp.exe" ]; then
-          cp build/MyApp.exe artifacts/
-        elif [ -f "MyApp.exe" ]; then
-          cp MyApp.exe artifacts/
-        fi
+        x86_64-w64-mingw32-g++ main.cpp -o MyApp.exe -static -mwindows
         
-        if [ -f "artifacts/MyApp.exe" ]; then
-          echo "✅ EXE file found"
-          ls -lh artifacts/MyApp.exe
+        if [ -f "MyApp.exe" ]; then
+          echo "✅ EXE created successfully"
+          ls -lh MyApp.exe
         else
-          echo "❌ No EXE file created"
+          echo "❌ Failed to create EXE"
           exit 1
         fi
     
@@ -81,5 +39,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Windows-EXE
-        path: artifacts/MyApp.exe
+        path: MyApp.exe
         retention-days: 7

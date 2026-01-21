@@ -1,15 +1,9 @@
-name: Build Windows EXE from Linux
+name: Build Windows EXE
 
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:  # Позволяет запускать вручную
+on: [push, workflow_dispatch]
 
 jobs:
   build-windows:
-    name: Build for Windows
     runs-on: ubuntu-latest
     
     steps:
@@ -18,7 +12,7 @@ jobs:
       uses: actions/checkout@v4
     
     # Шаг 2: Установка зависимостей
-    - name: Install dependencies
+    - name: Install build dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -30,3 +24,127 @@ jobs:
             p7zip-full \
             zip \
             unzip
+    
+    # Шаг 3: Быстрая установка MXE (кросс-компилятор)
+    - name: Install MXE cross-compiler
+      run: |
+        echo "⚡ Устанавливаем MXE для кросс-компиляции..."
+        
+        # Скачиваем предварительно собранный MXE
+        wget https://github.com/mxe/mxe/releases/download/2024-01-13/mxe-x86_64-w64-mingw32.static-20240113.tar.xz
+        tar -xf mxe-x86_64-w64-mingw32.static-20240113.tar.xz -C /tmp/
+        
+        # Добавляем в PATH
+        echo "/tmp/mxe/usr/bin" >> $GITHUB_PATH
+        echo "✅ MXE установлен"
+    
+    # Шаг 4: Проверяем структуру проекта
+    - name: Check project structure
+      run: |
+        echo "📁 Структура проекта:"
+        find . -name "*.cpp" -o -name "*.h" -o -name "*.qml" | head -20
+        echo ""
+        echo "📄 CMakeLists.txt:"
+        head -30 CMakeLists.txt 2>/dev/null || echo "CMakeLists.txt не найден!"
+    
+    # Шаг 5: Настраиваем CMake
+    - name: Configure with CMake
+      env:
+        PATH: /tmp/mxe/usr/bin:$PATH
+      run: |
+        echo "🎯 Конфигурация CMake..."
+        
+        # Создаем директорию сборки
+        mkdir -p build
+        cd build
+        
+        # Запускаем CMake с кросс-компиляцией
+        x86_64-w64-mingw32.static-cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=./install
+        
+        echo "✅ CMake сконфигурирован"
+    
+    # Шаг 6: Сборка проекта
+    - name: Build project
+      env:
+        PATH: /tmp/mxe/usr/bin:$PATH
+      run: |
+        echo "🔨 Сборка проекта..."
+        cd build
+        
+        # Собираем
+        cmake --build . --config Release
+        
+        # Проверяем создание EXE
+        if [ -f "TelegramCloneQML.exe" ]; then
+          echo "✅ TelegramCloneQML.exe создан!"
+          ls -lh TelegramCloneQML.exe
+        else
+          echo "❌ EXE файл не найден. Ищем другие файлы:"
+          find . -name "*.exe" -o -name "*.dll" 2>/dev/null || true
+        fi
+    
+    # Шаг 7: Копируем файлы для артефакта
+    - name: Prepare artifacts
+      run: |
+        echo "📦 Подготовка артефактов..."
+        
+        # Создаем директорию для артефактов
+        mkdir -p artifacts
+        
+        # Копируем EXE если есть
+        if [ -f "build/TelegramCloneQML.exe" ]; then
+          cp build/TelegramCloneQML.exe artifacts/
+          echo "✅ EXE скопирован"
+        fi
+        
+        # Копируем все QML файлы
+        mkdir -p artifacts/qml
+        find . -name "*.qml" -exec cp {} artifacts/qml/ \; 2>/dev/null || true
+        
+        # Создаем README
+        cat > artifacts/README.txt << 'EOF'
+Telegram Clone QML - Windows Build
+===================================
+Дата сборки: $(date +%Y-%m-%d)
+
+Инструкция:
+1. Запустите TelegramCloneQML.exe
+2. Если не запускается, установите:
+   https://aka.ms/vs/17/release/vc_redist.x64.exe
+
+Файлы:
+- TelegramCloneQML.exe - основное приложение
+- qml/ - QML файлы приложения
+EOF
+        
+        # Архивируем
+        cd artifacts
+        zip -r TelegramCloneQML-Windows.zip .
+        
+        echo "📊 Содержимое артефакта:"
+        ls -la
+    
+    # Шаг 8: Загружаем артефакты
+    - name: Upload Windows build
+      uses: actions/upload-artifact@v4
+      with:
+        name: TelegramCloneQML-Windows
+        path: |
+          artifacts/TelegramCloneQML-Windows.zip
+          build/TelegramCloneQML.exe
+        retention-days: 7
+        if-no-files-found: warn
+    
+    # Шаг 9: Статус сборки
+    - name: Build status
+      if: always()
+      run: |
+        if [ -f "artifacts/TelegramCloneQML-Windows.zip" ]; then
+          echo "🎉 Сборка УСПЕШНА! Артефакты созданы."
+          echo "📥 Скачайте TelegramCloneQML-Windows.zip из раздела Artifacts"
+        else
+          echo "⚠️  Сборка завершена, но артефакты не созданы"
+          echo "Проверьте логи шагов 'Build project' и 'Prepare artifacts'"
+        fi

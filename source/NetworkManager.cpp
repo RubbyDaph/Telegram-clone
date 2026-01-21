@@ -50,22 +50,77 @@ void NetworkManager::ConnectToPeer(const QString &userAddress, quint16 port)
 }
 
 
-bool NetworkManager::StartP2PNode(quint16 preferredPort = 0)
+bool NetworkManager::StartP2PNode(quint16 preferredPort)
 {
-
-    if (preferredPort == 0) {
-        preferredPort = 49152;
+    if (isRunning) {
+        return true;
     }
 
-    for (quint16 port = preferredPort; port < 65535; port++) {
-        if (tcpServer->listen(QHostAddress::Any, port)) {
-            currentPort = port;
-            qDebug() << "Server started on port:" << port;
-            return true;
+    currentPort = 0;
+    isRunning = false;
+
+    tcpServer = new QTcpServer(this);
+    if (!tcpServer) {
+        emit ServerStartFail();
+        return false;
+    }
+    qDebug() << "TCP server created";
+
+    connect(tcpServer, &QTcpServer::newConnection,
+            this, &NetworkManager::onNewIncomingConnection);
+
+    if (preferredPort == 0) {
+
+        if (!tcpServer->listen(QHostAddress::AnyIPv4, 0)) {
+            tcpServer->deleteLater();
+            tcpServer = nullptr;
+            emit ServerStartFail();
+            return false;
+        }
+
+        currentPort = tcpServer->serverPort();
+    }
+    else {
+
+        bool listenSuccess = false;
+        for (quint16 port = preferredPort; port < preferredPort + 10; port++) {
+            if (tcpServer->listen(QHostAddress::AnyIPv4, port)) {
+                currentPort = port;
+                listenSuccess = true;
+                break;
+            }
+        }
+
+        if (!listenSuccess) {
+            tcpServer->deleteLater();
+            tcpServer = nullptr;
+            emit ServerStartFail();
+            return false;
         }
     }
 
-    return false;
+
+    udpSocket = new QUdpSocket(this);
+    if (!udpSocket) {
+    }
+    else if (!udpSocket->bind(currentPort + 1, QUdpSocket::ShareAddress)) {
+        udpSocket->deleteLater();
+        udpSocket = nullptr;
+    }
+    else {
+        connect(udpSocket, &QUdpSocket::readyRead,
+                this, &NetworkManager::onUdpDataReceived);
+
+        QTimer* timer = new QTimer(this);
+        connect(timer, &QTimer::timeout, this, &NetworkManager::BroadcastPresence);
+        timer->start(5000);
+
+    }
+
+    isRunning = true;
+    emit ServerStarted();
+
+    return true;
 }
 
 void NetworkManager::StopP2PNode()

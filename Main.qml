@@ -17,7 +17,16 @@ Window {
         id: userController
 
     }
+    Timer {
+        id: autoConnectTimer
 
+        interval: 3000
+        repeat: false
+        running: false
+
+        onTriggered: {
+            }
+    }
     Component.onCompleted:{
         userController.StartMessaging()
         autoConnectTimer.start()

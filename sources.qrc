@@ -3,7 +3,6 @@
         <file>Main.qml</file>
         <file>ChatsDelegate.qml</file>
         <file>DialogDelegate.qml</file>
-        <file>defaultPFP.png</file>
         <file>Pages/AddUser.qml</file>
     </qresource>
 </RCC>

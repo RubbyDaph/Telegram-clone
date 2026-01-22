@@ -1,65 +1,37 @@
-name: Build Windows EXE Simple
+name: Build on Windows
 
 on: [push]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-windows-native:
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download pre-built Qt for Windows
-        run: |
-          # Скачиваем Qt Online Installer
-          wget https://download.qt.io/official_releases/online_installers/qt-unified-linux-x64-online.run
-          chmod +x qt-unified-linux-x64-online.run
-          
-          # Или скачиваем готовую версию Qt
-          wget https://download.qt.io/official_releases/qt/6.5/6.5.3/single/qt-everywhere-src-6.5.3.tar.xz
-          tar -xf qt-everywhere-src-6.5.3.tar.xz
+      - name: Setup Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.5.3'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
 
-      - name: Create simple build script
+      - name: Build with CMake
+        shell: cmd
         run: |
-          # Создаем простейший CMakeLists.txt
-          cat > build.cmake << 'EOF'
-          cmake_minimum_required(VERSION 3.16)
-          project(TelegramCloneQML)
-          
-          set(CMAKE_CXX_STANDARD 17)
-          
-          # Просто компилируем без Qt для теста
-          add_executable(TelegramCloneQML main.cpp)
-          
-          if(WIN32)
-              set_target_properties(TelegramCloneQML PROPERTIES SUFFIX ".exe")
-          endif()
-          EOF
-          
-          # Создаем простой main.cpp если его нет
-          if [ ! -f "source/main.cpp" ]; then
-            mkdir -p source
-            cat > source/main.cpp << 'EOF'
-            #include <iostream>
-          
-            int main() {
-                std::cout << "Telegram Clone - Windows Build" << std::endl;
-                return 0;
-            }
-            EOF
-          fi
+          mkdir build
+          cd build
+          cmake ../source -G "Visual Studio 16 2019" -A x64
+          cmake --build . --config Release
 
-      - name: Cross-compile simple version
+      - name: List build results
+        shell: cmd
         run: |
-          mkdir build && cd build
-          x86_64-w64-mingw32-g++ ../source/main.cpp -o TelegramCloneQML.exe -static
-          
-          echo "✅ EXE created:"
-          file TelegramCloneQML.exe
-          ls -lh TelegramCloneQML.exe
+          dir build\Release /s
 
-      - name: Upload simple EXE
+      - name: Upload Windows EXE
         uses: actions/upload-artifact@v4
         with:
-          name: Simple-Windows-EXE
-          path: build/TelegramCloneQML.exe
+          name: Windows-Native-Build
+          path: build/Release/*.exe

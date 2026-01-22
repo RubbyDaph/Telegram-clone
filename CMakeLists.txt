@@ -10,48 +10,52 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Находим Qt6
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Quick Qml Network Gui)
+# Поиск Qt6
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Quick Qml Network)
 
-# Исходные файлы
-file(GLOB_RECURSE SOURCES
-        "source/*.cpp"
+# Настройка кросскомпиляции для Windows
+if(CMAKE_CROSSCOMPILING AND CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    message(STATUS "Cross-compiling for Windows")
+    add_definitions(-D_WIN32_WINNT=0x0A00)
+endif()
+
+# Список исходных файлов
+set(SOURCES
+        source/main.cpp
+        source/ChatList.cpp
+        source/DialogClass.cpp
+        source/MessageClass.cpp
+        source/NetworkManager.cpp
+        source/UserController.cpp
 )
 
-file(GLOB_RECURSE HEADERS
-        "source/*.h"
+set(HEADERS
+        source/ChatList.h
+        source/DialogClass.h
+        source/MessageClass.h
+        source/NetworkManager.h
+        source/UserController.h
 )
 
-# QML файлы
-set(QML_FILES
-        "source/Main.qml"
-        "source/ChatsDelegate.qml"
-        "source/DialogDelegate.qml"
-        "Pages/AddUser.qml"
+# Создание исполняемого файла
+add_executable(TelegramCloneQML ${SOURCES} ${HEADERS})
+
+# Ресурсы
+qt_add_resources(TelegramCloneQML "resources"
+        PREFIX "/"
+        FILES
+        source/sources.qrc
 )
 
-# Главное приложение
-add_executable(TelegramCloneQML
-        ${SOURCES}
-        ${HEADERS}
-        "source/main.cpp"
-        "source/sources.qrc"
-)
-
-# Настройки для Windows
+# Для Windows настройки
 if(WIN32)
     set_target_properties(TelegramCloneQML PROPERTIES
             WIN32_EXECUTABLE TRUE
             SUFFIX ".exe"
     )
-
-    target_compile_definitions(TelegramCloneQML PRIVATE
-            -DUNICODE
-            -D_UNICODE
-    )
 endif()
 
-# Подключаем Qt модули
+# Подключение Qt библиотек
 target_link_libraries(TelegramCloneQML PRIVATE
         Qt6::Core
         Qt6::Quick
@@ -60,21 +64,27 @@ target_link_libraries(TelegramCloneQML PRIVATE
         Qt6::Gui
 )
 
-# Включаем директории
+# Включение директорий
 target_include_directories(TelegramCloneQML PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/source
 )
 
-# Опционально: Добавляем метаинформацию для QML модуля
+# Установка QML файлов для сборки
+file(GLOB_RECURSE QML_FILES
+        "source/*.qml"
+        "Pages/*.qml"
+)
+
+# Добавление QML модуля
 qt_add_qml_module(TelegramCloneQML
         URI TelegramCloneQML
         VERSION 1.0
         QML_FILES ${QML_FILES}
 )
 
-# Устанавливаем приложение
+# Установка
 install(TARGETS TelegramCloneQML
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RUNTIME DESTINATION bin
         BUNDLE DESTINATION .
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION lib
 )

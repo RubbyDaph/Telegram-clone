@@ -1,43 +1,31 @@
-name: Build Windows EXE
+name: Simple Qt Build
 
-on: [push, workflow_dispatch]
+on: [push]
 
 jobs:
-  build-windows:
+  build:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     
-    - name: Install dependencies
+    - name: Setup Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.3'
+        target: 'desktop'
+        arch: 'win64_mingw'
+        setup-python: false
+    
+    - name: Build
+      shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake mingw-w64 zip
-    
-    - name: Build simple EXE
-      run: |
-        cat > main.cpp << 'EOF'
-        #include <iostream>
-        int main() {
-            std::cout << "Hello from Windows EXE!" << std::endl;
-            return 0;
-        }
-        EOF
+        mkdir build && cd build
+        ${{ env.QT_DIR }}/bin/qmake ../source/ CONFIG+=release
+        make -j$(nproc)
         
-        x86_64-w64-mingw32-g++ main.cpp -o MyApp.exe -static -mwindows
-        
-        if [ -f "MyApp.exe" ]; then
-          echo "✅ EXE created successfully"
-          ls -lh MyApp.exe
-        else
-          echo "❌ Failed to create EXE"
-          exit 1
-        fi
-    
-    - name: Upload artifact
+    - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: Windows-EXE
-        path: MyApp.exe
-        retention-days: 7
+        name: App
+        path: build/release/*.exe

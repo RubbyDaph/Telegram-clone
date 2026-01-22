@@ -182,7 +182,7 @@ jobs:
             wine64 TelegramCloneQML.exe --version 2>&1 | head -20 || echo "Wine test completed"
           
             # Проверяем зависимости
-            echo "Checking DLL dependencies:"
+            echo "Checking DLL ye dependencies:"
             x86_64-w64-mingw32.shared-objdump -p TelegramCloneQML.exe | grep "DLL Name" | sort | uniq
           fi
 

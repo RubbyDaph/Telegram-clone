@@ -1,165 +1,198 @@
-name: Build Qt P2P Messenger
+name: Build Windows EXE with MXE
 
 on: [push, workflow_dispatch]
 
 jobs:
   build-windows:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install build tools
+      - name: Install basic dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
             cmake \
-            ninja-build \
-            mingw-w64 \
-            wine64 \
-            zip \
+            git \
             p7zip-full \
+            wget \
+            curl \
+            unzip \
+            python3 \
             python3-pip \
-            python3-setuptools
-          
-          # Обновляем pip и устанавливаем aqtinstall
-          python3 -m pip install --upgrade pip
-          python3 -m pip install aqtinstall==3.1.11  # Стабильная версия
+            ninja-build
 
-      - name: Install Qt for Windows
+      - name: Download prebuilt MXE with Qt
         run: |
-          # Установка Qt 6.5.3 для Windows (mingw)
-          echo "Installing Qt 6.5.3..."
-          python3 -m aqt install-qt windows desktop 6.5.3 win64_mingw --archives qttools qttranslations qtbase qtdeclarative qtnetworkauth qtsvg
+          # Скачиваем предсобранный MXE с Qt
+          wget https://github.com/mxe/mxe/releases/download/qt6-2024/mxe-qt6-ubuntu-22.04.tar.xz
+          tar -xf mxe-qt6-ubuntu-22.04.tar.xz
+          export PATH=$(pwd)/mxe/usr/bin:$PATH
+          echo "PATH=$PATH" >> $GITHUB_ENV
           
-          echo "Installing CMake tool..."
-          python3 -m aqt install-tool windows desktop tools_cmake
-          
-          echo "Installing OpenSSL..."
-          python3 -m aqt install-tool windows desktop tools_openssl
-          
-          echo "Qt installation completed"
-          ls -la $HOME/Qt/
+          # Проверяем доступность компиляторов
+          x86_64-w64-mingw32.shared-gcc --version
+          x86_64-w64-mingw32.shared-qmake-qt6 --version
 
-      - name: Configure project
+      - name: Create simple .pro file for qmake
         run: |
-          # Пути к установленному Qt
-          export QT_DIR="$HOME/Qt/6.5.3/mingw_64"
-          export PATH="$QT_DIR/bin:$PATH"
+          # Создаем простой .pro файл для сборки
+          cat > source/TelegramCloneQML.pro << 'EOF'
+          QT += core quick qml network gui
           
-          echo "Qt directory: $QT_DIR"
-          echo "Checking Qt installation:"
-          ls -la "$QT_DIR/bin/" | grep -E "(qmake|windeployqt)"
+          TARGET = TelegramCloneQML
+          TEMPLATE = app
+          CONFIG += c++17
           
-          # Создаем директорию для сборки
-          mkdir -p build && cd build
+          SOURCES += \
+              main.cpp \
+              ChatList.cpp \
+              DialogClass.cpp \
+              MessageClass.cpp \
+              NetworkManager.cpp \
+              UserController.cpp
           
-          # Конфигурируем проект
-          cmake ../source \
-            -DCMAKE_PREFIX_PATH="$QT_DIR/lib/cmake" \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
-            -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
-            -DCMAKE_SYSTEM_NAME=Windows \
-            -DCMAKE_CROSSCOMPILING=TRUE \
-            -GNinja \
-            -DCMAKE_INSTALL_PREFIX=./install
+          HEADERS += \
+              ChatList.h \
+              DialogClass.h \
+              MessageClass.h \
+              NetworkManager.h \
+              UserController.h
           
-          echo "CMake configuration completed"
+          RESOURCES += sources.qrc
+          
+          QML_FILES = \
+              Main.qml \
+              ChatsDelegate.qml \
+              DialogDelegate.qml \
+              Pages/AddUser.qml
+          
+          # Для Windows
+          win32 {
+              RC_FILE = app.rc
+              TARGET = $$join(TARGET,,,.exe)
+          }
+          
+          # Пути для QML
+          QML_IMPORT_PATH = $$PWD
+          EOF
+          
+          # Создаем простой файл ресурсов, если его нет
+          if [ ! -f "source/sources.qrc" ]; then
+            cat > source/sources.qrc << 'EOF'
+            <RCC>
+              <qresource prefix="/">
+                <file>Main.qml</file>
+                <file>ChatsDelegate.qml</file>
+                <file>DialogDelegate.qml</file>
+                <file>Pages/AddUser.qml</file>
+              </qresource>
+            </RCC>
+            EOF
+          fi
 
-      - name: Build project
+      - name: Build with qmake
         run: |
-          export QT_DIR="$HOME/Qt/6.5.3/mingw_64"
-          cd build
+          export PATH=$(pwd)/mxe/usr/bin:$PATH
+          cd source
           
-          # Собираем проект
-          echo "Building project..."
-          cmake --build . --config Release --target install --parallel $(nproc)
+          # Используем qmake из MXE
+          x86_64-w64-mingw32.shared-qmake-qt6 TelegramCloneQML.pro
+          
+          # Компилируем
+          make -j$(nproc) release
           
           # Проверяем результат
-          echo "Build output:"
-          find . -name "*.exe" -type f | xargs -I {} ls -lh {}
+          ls -la release/*.exe || ls -la *.exe
 
-      - name: Collect dependencies
+      - name: Collect DLL dependencies
         run: |
-          export QT_DIR="$HOME/Qt/6.5.3/mingw_64"
+          export PATH=$(pwd)/mxe/usr/bin:$PATH
+          cd source
           
-          # Находим exe файл
-          if [ -f "build/install/bin/TelegramCloneQML.exe" ]; then
-            EXE_PATH="build/install/bin/TelegramCloneQML.exe"
-            OUTPUT_DIR="build/install/bin"
-          elif [ -f "build/TelegramCloneQML.exe" ]; then
-            EXE_PATH="build/TelegramCloneQML.exe"
-            OUTPUT_DIR="build"
+          # Ищем exe файл
+          if [ -f "release/TelegramCloneQML.exe" ]; then
+            EXE_PATH="release/TelegramCloneQML.exe"
+          elif [ -f "TelegramCloneQML.exe" ]; then
+            EXE_PATH="TelegramCloneQML.exe"
           else
-            echo "❌ EXE file not found, searching..."
-            find build -name "*.exe" -type f
+            echo "❌ EXE not found, searching..."
+            find . -name "*.exe" -type f
             exit 1
           fi
           
-          echo "Executable found at: $EXE_PATH"
+          echo "✅ Found: $EXE_PATH"
           
-          # Создаем папку для релиза
-          mkdir -p build/TelegramCloneQML
+          # Создаем папку для дистрибутива
+          mkdir -p dist
+          cp "$EXE_PATH" dist/
           
-          # Копируем EXE
-          cp "$EXE_PATH" build/TelegramCloneQML/
+          # Копируем необходимые DLL из MXE
+          cp mxe/usr/x86_64-w64-mingw32.shared/bin/*.dll dist/ 2>/dev/null || true
           
-          # Копируем необходимые Qt DLL вручную
-          echo "Copying Qt DLLs..."
-          cp "$QT_DIR/bin/"Qt6Core.dll build/TelegramCloneQML/
-          cp "$QT_DIR/bin/"Qt6Quick.dll build/TelegramCloneQML/
-          cp "$QT_DIR/bin/"Qt6Qml.dll build/TelegramCloneQML/
-          cp "$QT_DIR/bin/"Qt6Network.dll build/TelegramCloneQML/
-          cp "$QT_DIR/bin/"Qt6Gui.dll build/TelegramCloneQML/
-          
-          # Копируем плагины
-          mkdir -p build/TelegramCloneQML/{platforms,imageformats}
-          cp "$QT_DIR/plugins/platforms/"qwindows.dll build/TelegramCloneQML/platforms/
-          cp "$QT_DIR/plugins/imageformats/"qjpeg.dll build/TelegramCloneQML/imageformats/
-          
-          # Копируем MinGW runtime DLL
-          cp /usr/x86_64-w64-mingw32/lib/libstdc++-6.dll build/TelegramCloneQML/
-          cp /usr/x86_64-w64-mingw32/lib/libgcc_s_seh-1.dll build/TelegramCloneQML/
-          cp /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll build/TelegramCloneQML/
-          
-          # Копируем QML файлы
-          cp -r ../source/*.qml build/TelegramCloneQML/ 2>/dev/null || true
-          mkdir -p build/TelegramCloneQML/Pages
-          cp -r ../Pages/*.qml build/TelegramCloneQML/Pages/ 2>/dev/null || true
-          
-          echo "Dependencies collected"
-
-      - name: Test dependencies
-        run: |
-          cd build/TelegramCloneQML
-          
-          echo "Checking EXE dependencies with wine..."
-          wine64 TelegramCloneQML.exe --version 2>&1 | head -20 || echo "Wine test completed"
-          
-          echo "Checking DLLs..."
+          # Фильтруем только нужные Qt DLL
+          cd dist
+          rm -f *d.dll  # Удаляем debug версии
           ls -la *.dll
-          echo ""
-          echo "Directory structure:"
-          find . -type f -name "*.dll" -o -name "*.exe" -o -name "*.qml" | sort
 
-      - name: Create package
+      - name: Create minimal package
         run: |
-          cd build
+          mkdir -p package/TelegramCloneQML
+          
+          # Копируем exe
+          cp source/dist/TelegramCloneQML.exe package/TelegramCloneQML/
+          
+          # Копируем только необходимые DLL
+          cd package/TelegramCloneQML
+          
+          # Основные системные DLL
+          cp ../../mxe/usr/x86_64-w64-mingw32.shared/bin/libgcc_s_seh-1.dll .
+          cp ../../mxe/usr/x86_64-w64-mingw32.shared/bin/libstdc++-6.dll .
+          cp ../../mxe/usr/x86_64-w64-mingw32.shared/bin/libwinpthread-1.dll .
+          
+          # Qt DLL
+          cp ../../mxe/usr/x86_64-w64-mingw32.shared/bin/Qt6Core.dll .
+          cp ../../mxe/usr/x86_64-w64-mingw32.shared/bin/Qt6Gui.dll .
+          cp ../../mxe/usr/x86_64-w64-mingw32.shared/bin/Qt6Network.dll .
+          cp ../../mxe/usr/x86_64-w64-mingw32.shared/bin/Qt6Qml.dll .
+          cp ../../mxe/usr/x86_64-w64-mingw32.shared/bin/Qt6Quick.dll .
+          
+          # Плагины Qt
+          mkdir -p platforms
+          cp ../../mxe/usr/x86_64-w64-mingw32.shared/bin/qt6/plugins/platforms/qwindows.dll platforms/
+          
+          # QML файлы
+          mkdir -p qml
+          cp ../../source/*.qml qml/ 2>/dev/null || true
+          mkdir -p Pages
+          cp ../../Pages/AddUser.qml Pages/ 2>/dev/null || true
+          
+          # Создаем batch файл для запуска
+          cat > run.bat << 'EOF'
+          @echo off
+          echo Starting TelegramCloneQML...
+          TelegramCloneQML.exe
+          pause
+          EOF
+          
+          echo "📁 Package contents:"
+          find . -type f | sort
+
+      - name: Create ZIP archive
+        run: |
+          cd package
           zip -r TelegramCloneQML-Windows.zip TelegramCloneQML/
           
-          echo "📦 Package created:"
+          echo "📦 Package size:"
           ls -lh TelegramCloneQML-Windows.zip
-          echo ""
-          echo "📁 Contents:"
-          unzip -l TelegramCloneQML-Windows.zip | tail -30
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: TelegramCloneQML-Windows
-          path: build/TelegramCloneQML-Windows.zip
+          path: package/TelegramCloneQML-Windows.zip
           retention-days: 7
-          if-no-files-found: error

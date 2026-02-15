@@ -204,10 +204,6 @@ void NetworkManager::ProcessNetworkMessage(QTcpSocket* senderSocket, const QByte
         QDateTime timestamp = QDateTime::fromString(json["timestamp"].toString(), Qt::ISODate);
         emit MessageReceived(peerId, message, timestamp);
     }
-    else if (type == "typing") {
-        bool isTyping = json["status"].toBool();
-        emit peerTypingStatusChanged(peerId, isTyping);
-    }
     else if (type == "presence") {
         bool isOnline = json["status"].toBool();
         emit peerPresenceChanged(peerId, isOnline);
@@ -249,12 +245,6 @@ void NetworkManager::onPeerReadyRead()
 
         ProcessNetworkMessage(socket, messageData);
     }
-}
-
-
-void NetworkManager::sendTypingStatus(const QString& peerId, bool isTyping)
-{
-    sendStatusPacket(peerId, isTyping, "typing");
 }
 
 void NetworkManager::sendPresenceStatus(const QString& peerId, bool isOnline)

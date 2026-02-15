@@ -22,7 +22,6 @@ public:
     void StopP2PNode();
 
     void SendMessage(const QString& message, const QString& userAddress);
-    void sendTypingStatus(const QString& peerId, bool isTyping);
     void sendPresenceStatus(const QString& peerId, bool isOnline);
     QString GetMyUuid() const {return myUuid;}
     bool IsRunning() const {return isRunning;}
@@ -33,7 +32,6 @@ signals:
     void ServerStarted();
     void ServerStartFail();
 
-    void peerTypingStatusChanged(const QString& peerId, bool isTyping);
     void peerPresenceChanged(const QString& peerId, bool isOnline);
 
     void PeerConnected(const QString& peerID, const QString& peerAddress, const QString& peerName = "");

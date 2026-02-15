@@ -36,10 +36,8 @@ UserController::UserController(QObject *parent)
     }
 
 
-    connect(networkManager, &NetworkManager::peerTypingStatusChanged, this, &UserController::onPeerTypingStatusChanged);
     connect(this, &UserController::DialogModelChanged, dialogModel, &DialogModel::OnDialogModelChanged);
     connect(networkManager, &NetworkManager::MessageReceived, this, &UserController::OnMessageReceived);
-    connect(networkManager, &NetworkManager::peerTypingStatusChanged, this, &UserController::onPeerTypingStatusChanged);
     connect(networkManager, &NetworkManager::peerPresenceChanged, this, &UserController::onPeerPresenceChanged);
     connect(networkManager, &NetworkManager::PeerConnected, this, &UserController::OnPeerConnected);
     connect(networkManager, &NetworkManager::PeerDisconnected, this, &UserController::OnPeerDisconnected);
@@ -154,10 +152,6 @@ void UserController::onPeerPresenceChanged(const QString& peerId, bool isOnline)
     qDebug() << "OnConnectionStatusChanged called: " << isOnline;
 }
 
-void UserController::onPeerTypingStatusChanged(const QString& peerId, bool isTyping)
-{
-    qDebug() << "OnTypingStatusChanged called: " << isTyping << " " << peerId;
-}
 
 void UserController::OnConnectionFail(const QString& reason)
 {

@@ -148,13 +148,13 @@ Window {
                         ColumnLayout {
                             Label {
                                 id: currentContactName
-                                property string selectedChatId: " "
+                                property string selectedChatId: ""
                                 color: "white"
-                                text: selectedChatId == " " ? userController.chatList.getContactNameByID(selectedChatId) : ""
+                                text: selectedChatId == "" ? userController.chatList.getContactNameByID(selectedChatId) : ""
                             }
                             Label {
                                 color: "white"
-                                text: currentContactName.selectedChatId == " " ? "last seen online" : ""
+                                text: currentContactName.selectedChatId == "" ? "last seen online" : ""
                             }
                         }
                         Rectangle {

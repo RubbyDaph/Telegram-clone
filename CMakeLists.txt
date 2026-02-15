@@ -25,7 +25,6 @@ if(NOT Qt6_FOUND)
 endif()
 
 if(WIN32 OR CMAKE_CROSSCOMPILING)
-    # Для Windows или кросс-компиляции
     add_executable(TelegramCloneQML WIN32
             main.cpp
             ${SOURCES}
@@ -33,19 +32,16 @@ if(WIN32 OR CMAKE_CROSSCOMPILING)
             ${app_resources}
     )
 
-    # Настройки для Windows
     set_target_properties(TelegramCloneQML PROPERTIES
             WIN32_EXECUTABLE TRUE
             SUFFIX ".exe"
     )
 
-    # Ресурсы Windows
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/app.rc")
         target_sources(TelegramCloneQML PRIVATE app.rc)
     endif()
 
 else()
-    # Для нативной сборки (Linux/macOS)
     add_executable(TelegramCloneQML
             main.cpp
             ${SOURCES}
@@ -118,7 +114,6 @@ qt_add_qml_module(appTelegramCloneQML
 )
 
 set_target_properties(appTelegramCloneQML PROPERTIES
-        #    MACOSX_BUNDLE_GUI_IDENTIFIER com.example.appTelegramCloneQML
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
         MACOSX_BUNDLE TRUE

@@ -26,6 +26,9 @@ public:
     void sendPresenceStatus(const QString& peerId, bool isOnline);
     QString GetMyUuid() const {return myUuid;}
     bool IsRunning() const {return isRunning;}
+    void SetUserInfo(const QString& uuid, const QString& username);
+    void SetUuid(QString uuid);
+    void SetUsername(QString username);
 signals:
     void ServerStarted();
     void ServerStartFail();

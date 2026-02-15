@@ -438,5 +438,61 @@ void NetworkManager::SendHelloMessage(QTcpSocket* socket)
 
 void NetworkManager::onUdpDataReceived()
 {
+    if (!udpSocket) return;
 
+    while (udpSocket->hasPendingDatagrams())
+    {
+        QByteArray datagram;
+        datagram.resize(udpSocket->pendingDatagramSize());
+
+        QHostAddress senderAddress;
+        quint16 senderPort;
+        qint64 bytesRead = udpSocket->readDatagram(datagram.data(), datagram.size(), &senderAddress, &senderPort);
+
+        if (bytesRead <= 0) continue;
+        QJsonDocument doc = QJsonDocument::fromJson(datagram);
+        if (doc.isNull()) continue;
+
+        QJsonObject json = doc.object();
+        QString type = json["type"].toString();
+
+        if (type == "discovery")
+        {
+            QString peerUuid = json["uuid"].toString();
+            quint16 peerTcpPort = json["tcp_port"].toInt();
+
+            if (peerUuid == myUuid) continue;
+
+            bool alreadyConnected = false;
+            for (const QString& connectedPeerId : activePeers.keys())
+            {
+                if (connectedPeerId == peerUuid || (connectedPeerId.startsWith("temp_") &&
+                    connectedPeerId.contains(senderAddress.toString())))
+                {
+                    alreadyConnected = true;
+                    break;
+                }
+            }
+            if (!alreadyConnected && isRunning)
+            {
+                ConnectToPeer(senderAddress.toString(), peerTcpPort);
+            }
+        }
+    }
+}
+
+void NetworkManager::SetUserInfo(const QString &uuid, const QString &username)
+{
+    this->myUuid = uuid;
+    this->username = username;
+}
+
+void NetworkManager::SetUuid(QString uuid)
+{
+    myUuid = uuid;
+}
+
+void NetworkManager::SetUsername(QString username)
+{
+    this->username = username;
 }

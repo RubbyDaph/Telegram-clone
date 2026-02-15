@@ -4,7 +4,7 @@ import QtQuick.Controls 2.12
 import QtQuick.Window 2.2
 
 Dialog {
-    id: addContact
+    id: addUser
 
     property color dialogBackground: '#141521'
     property alias contactName: nameInput.text
@@ -23,7 +23,7 @@ Dialog {
     }
     background: Rectangle {
         anchors.fill: parent
-        color: addContact.dialogBackground
+        color: addUser.dialogBackground
     }
     contentItem: ColumnLayout {
         id: contentLayout
@@ -79,9 +79,9 @@ Dialog {
                 verticalAlignment: Text.AlignVCenter
             }
             onClicked:{
-                    addContact.nameSubmitted(nameInput.text)
+                    addUser.nameSubmitted(nameInput.text)
                     nameInput.clear()
-                    addContact.close()
+                    addUser.close()
             }
         }
         Item {
@@ -97,7 +97,7 @@ Dialog {
 
         background: Rectangle {
             anchors.fill: parent
-            color: addContact.dialogBackground
+            color: addUser.dialogBackground
         }
 
         RowLayout {
@@ -115,52 +115,12 @@ Dialog {
 
                 Layout.alignment: Qt.AlignCenter | Qt.AlignVCenter
                 color: "white"
-                text: "Add contact"
+                text: "Login menu"
             }
             Item {
                 id: headerSpacer2
 
                 Layout.fillWidth: true
-            }
-            Button {
-                id: closeButton
-                onClicked: addContact.close()
-                Layout.preferredHeight: 20
-                Layout.preferredWidth: 20
-
-                background: Rectangle {
-                    anchors.fill: parent
-                    color: closeButton.hovered ? "red" : addContact.dialogBackground
-                }
-
-                Rectangle {
-                    id: closeButtonIcon1
-
-                    height: 15
-                    width: 2
-                    x: 8
-                    y: 2.5
-
-                    transform: Rotation {
-                        angle: 45
-                        origin.x: 1
-                        origin.y: 15 / 2
-                    }
-                }
-                Rectangle {
-                    id: closeButtonIcon2
-
-                    height: 15
-                    width: 2
-                    x: 8
-                    y: 2.5
-
-                    transform: Rotation {
-                        angle: 45 + 90
-                        origin.x: 1
-                        origin.y: 15 / 2
-                    }
-                }
             }
         }
     }

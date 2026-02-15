@@ -17,19 +17,11 @@ Window {
         id: userController
 
     }
-    Timer {
-        id: autoConnectTimer
-
-        interval: 3000
-        repeat: false
-        running: false
-
-        onTriggered: {
-            }
-    }
     Component.onCompleted:{
-        userController.StartMessaging()
-        autoConnectTimer.start()
+        loginLoader.active = true;
+        if (loginLoader.status === Loader.Ready) {
+            loginLoader.item.open();
+        }
     }
     RowLayout {
         id: rowLayout
@@ -56,28 +48,6 @@ Window {
                     Layout.minimumHeight: 79
                     Layout.preferredHeight: 79
 
-                    Button {
-                        id: addUserButton
-
-                        Layout.leftMargin: 10
-                        Layout.maximumHeight: 20
-                        Layout.maximumWidth: 20
-                        Layout.minimumHeight: 20
-                        Layout.minimumWidth: 20
-                        Layout.preferredHeight: 20
-                        Layout.preferredWidth: 20
-
-                        background: Rectangle {
-                            color: "#1F1F2F"
-                        }
-
-                        onClicked: {
-                            userAddLoader.active = true;
-                            if (userAddLoader.status === Loader.Ready) {
-                                userAddLoader.item.open();
-                            }
-                        }
-                    }
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.leftMargin: 8
@@ -178,13 +148,13 @@ Window {
                         ColumnLayout {
                             Label {
                                 id: currentContactName
-                                property int selectedChatId: -1
+                                property string selectedChatId: " "
                                 color: "white"
-                                text: selectedChatId >= 0 ? userController.chatList.getContactNameByID(selectedChatId) : ""
+                                text: selectedChatId == " " ? userController.chatList.getContactNameByID(selectedChatId) : ""
                             }
                             Label {
                                 color: "white"
-                                text: currentContactName.selectedChatId >= 0 ? "last seen online" : ""
+                                text: currentContactName.selectedChatId == " " ? "last seen online" : ""
                             }
                         }
                         Rectangle {
@@ -209,11 +179,11 @@ Window {
                 ListView {
                     id: curentChat
 
-                    property int selectedChatId: -1
+                    property string selectedChatId: " "
 
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-                    model: selectedChatId >= 0 ? userController.chatList.getDialogModel(selectedChatId) : null
+                    model: selectedChatId == " " ? userController.chatList.getDialogModel(selectedChatId) : null
                     spacing: 5
 
                     delegate: DialogDelegate {
@@ -307,21 +277,21 @@ Window {
         }
     }
     Loader {
-        id: userAddLoader
+        id: loginLoader
 
         active: false
-        source: "Pages/AddUser.qml"
+        source: "Pages/login.qml"
 
         onLoaded: {
             item.parent = window.contentItem;
             item.closed.connect(function () {
-                userAddLoader.active = false;
+                loginLoader.active = false;
             });
             item.nameSubmitted.connect(onNameSubmitted)
         }
     }
     function onNameSubmitted(textValue){
-        onClicked: userController.CreateChat(textValue)
+        onClicked: userController.Login(textValue)
     }
 }
 

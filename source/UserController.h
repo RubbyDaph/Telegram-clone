@@ -19,9 +19,13 @@ public:
     Q_INVOKABLE ChatList* GetChatList() const;
     Q_INVOKABLE DialogModel* GetDialogModel() const;
 
-    Q_INVOKABLE void SetCurrentChat(const QString& chatID);
+    Q_INVOKABLE void Login(const QString& username);
+    Q_INVOKABLE void Logout();
+    Q_INVOKABLE bool IsLoggedIn() const;
+    Q_INVOKABLE QString GetCurrentUsername() const;
+
     Q_INVOKABLE void StartMessaging();
-    Q_INVOKABLE void Logout(const QString& userAddress);
+    Q_INVOKABLE void SetCurrentChat(const QString& chatID);
     Q_INVOKABLE void SendMessage(const QString& message);
     Q_INVOKABLE void CreateChat(const QString& contactName);
     void SetUsername(const QString& name);

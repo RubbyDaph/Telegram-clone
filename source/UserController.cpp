@@ -13,6 +13,29 @@ UserController::UserController(QObject *parent)
     dialogModel = new DialogModel(this);
     messageClass = new MessageClass("", "", "", false);
 
+    QSettings settings;
+    username = settings.value("user/name", "User").toString();
+    QString savedUuid = settings.value("user/uuid", "").toString();
+
+    if (!savedUuid.isEmpty())
+    {
+        networkManager->SetUuid(savedUuid);
+    }
+
+    myUuid = networkManager->GetMyUuid();
+
+    if (savedUuid.isEmpty() && !myUuid.isEmpty())
+    {
+        settings.setValue("user/uuid", myUuid);
+    }
+
+    if (!username.isEmpty())
+    {
+        networkManager->SetUsername(username);
+        emit UsernameChangedForNetwork(username);
+    }
+
+
     connect(networkManager, &NetworkManager::peerTypingStatusChanged, this, &UserController::onPeerTypingStatusChanged);
     connect(this, &UserController::DialogModelChanged, dialogModel, &DialogModel::OnDialogModelChanged);
     connect(networkManager, &NetworkManager::MessageReceived, this, &UserController::OnMessageReceived);
@@ -21,14 +44,6 @@ UserController::UserController(QObject *parent)
     connect(networkManager, &NetworkManager::PeerConnected, this, &UserController::OnPeerConnected);
     connect(networkManager, &NetworkManager::PeerDisconnected, this, &UserController::OnPeerDisconnected);
     connect(this, &UserController::UsernameChangedForNetwork, networkManager, &NetworkManager::onUsernameChanged);
-    if (!username.isEmpty())
-    {
-        emit UsernameChangedForNetwork(username);
-    }
-    myUuid = networkManager->GetMyUuid();
-
-    QSettings settings;
-    username = settings.value("user/name", "User").toString();
 }
 
 
@@ -52,13 +67,35 @@ void UserController::StartMessaging()
     }
 }
 
-void UserController::Logout(const QString &userAddress)
+void UserController::Login(const QString& username)
 {
-    qDebug() << "Logout called for address:" << userAddress;
+    SetUsername(username);
+
+    if (myUuid.isEmpty())
+    {
+        myUuid = QUuid::createUuid().toString();
+    }
+
+    StartMessaging();
+}
+
+void UserController::Logout()
+{
 
     networkManager->StopP2PNode();
+    username.clear();
+    myUuid.clear();
+
+    QSettings settings;
+    settings.remove("user/name");
+    settings.remove("user/uuid");
 
     emit ConnectionStatusChange(false);
+}
+
+bool UserController::IsLoggedIn() const
+{
+    return !username.isEmpty() && networkManager->IsRunning();
 }
 
 void UserController::SendMessage(const QString &message)
@@ -160,10 +197,13 @@ void UserController::OnPeerConnected(const QString &peerID, const QString &peerA
     qDebug() << "Peer connected - ID:" << peerID
             << "Name:" << peerName;
 
-    QString displayName = !peerName.isEmpty() ? peerName :
-                         "User_" + peerID.mid(1, 8);
+    int chatIndex = chatList->findChatById(peerID);
 
-    chatList->AddChat(peerID, true, displayName);
+    if (chatIndex == -1) {
+        QString displayName = !peerName.isEmpty() ? peerName : "User_" + peerID.mid(1, 8);
+
+        chatList->AddChat(peerID, true, displayName);
+    }
 
     emit ConnectionStatusChange(true);
 }
@@ -171,4 +211,9 @@ void UserController::OnPeerConnected(const QString &peerID, const QString &peerA
 void UserController::OnPeerDisconnected(const QString &peerID, const QString &peerAddress)
 {
 
+}
+
+QString UserController::GetCurrentUsername() const
+{
+    return username;
 }

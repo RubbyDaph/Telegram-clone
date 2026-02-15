@@ -112,7 +112,7 @@ qt_add_qml_module(appTelegramCloneQML
         Main.qml
         ChatsDelegate.qml
         DialogDelegate.qml
-        Pages/AddUser.qml
+        Pages/login.qml
         RESOURCES
         sources.qrc
 )

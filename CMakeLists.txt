@@ -20,35 +20,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Quick)
 
-if(NOT Qt6_FOUND)
-    find_package(Qt5 5.15 REQUIRED COMPONENTS Core Quick Qml Network)
-endif()
 
-if(WIN32 OR CMAKE_CROSSCOMPILING)
-    add_executable(TelegramCloneQML WIN32
-            main.cpp
-            ${SOURCES}
-            ${HEADERS}
-            ${app_resources}
-    )
 
-    set_target_properties(TelegramCloneQML PROPERTIES
-            WIN32_EXECUTABLE TRUE
-            SUFFIX ".exe"
-    )
 
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/app.rc")
-        target_sources(TelegramCloneQML PRIVATE app.rc)
-    endif()
+add_executable(TelegramCloneQML
+        main.cpp
+        ${SOURCES}
+        ${HEADERS}
+        ${app_resources}
+)
 
-else()
-    add_executable(TelegramCloneQML
-            main.cpp
-            ${SOURCES}
-            ${HEADERS}
-            ${app_resources}
-    )
-endif()
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -64,23 +45,15 @@ file(GLOB_RECURSE HEADERS
 set(sources main.cpp)
 qt_add_resources(sources sources.qrc)
 
-if(Qt6_FOUND)
-    target_link_libraries(TelegramCloneQML PRIVATE
-            Qt6::Core
-            Qt6::Quick
-            Qt6::Qml
-            Qt6::Network
-            Qt6::Gui
-    )
-else()
-    target_link_libraries(TelegramCloneQML PRIVATE
-            Qt5::Core
-            Qt5::Quick
-            Qt5::Qml
-            Qt5::Network
-            Qt5::Gui
-    )
-endif()
+
+target_link_libraries(TelegramCloneQML PRIVATE
+        Qt6::Core
+        Qt6::Quick
+        Qt6::Qml
+        Qt6::Network
+        Qt6::Gui
+)
+
 
 qt_add_executable(appTelegramCloneQML
         main.cpp
@@ -89,12 +62,6 @@ qt_add_executable(appTelegramCloneQML
         sources.qrc
 )
 
-if(WIN32 OR CMAKE_CROSSCOMPILING)
-    target_compile_definitions(TelegramCloneQML PRIVATE
-            -DUNICODE
-            -D_UNICODE
-    )
-endif()
 
 target_include_directories(appTelegramCloneQML PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/source
@@ -113,12 +80,6 @@ qt_add_qml_module(appTelegramCloneQML
         sources.qrc
 )
 
-set_target_properties(appTelegramCloneQML PROPERTIES
-        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-        MACOSX_BUNDLE TRUE
-        WIN32_EXECUTABLE TRUE
-)
 
 target_link_libraries(appTelegramCloneQML
         PRIVATE Qt6::Core Qt6::Quick

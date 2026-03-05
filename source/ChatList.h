@@ -30,7 +30,7 @@ public:
     int rowCount(const QModelIndex & parent) const override ;
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
-    Q_INVOKABLE DialogModel* getDialogModel(QString chatId);
+    Q_INVOKABLE DialogModel* getDialogModel(const QString& chatId);
     Q_INVOKABLE void updateLastMessage(int chatIndex, const QString &message, const QString &sender);
     Q_INVOKABLE int findChatById(QString uuid);
     Q_INVOKABLE QString getContactNameByID(QString chatId);

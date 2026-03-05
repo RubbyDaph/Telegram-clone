@@ -7,21 +7,27 @@ import TelegramCloneQML 1.0
 Window {
     id: window
 
+    function onNameSubmitted(textValue) {
+        onClicked: userController.Login(textValue);
+    }
+
     height: 600 - 22
     minimumHeight: 600
     minimumWidth: 651
     title: qsTr("Telegrom")
     visible: true
     width: 650
-    UserController {
-        id: userController
 
-    }
-    Component.onCompleted:{
+    Component.onCompleted: {
         loginLoader.active = true;
         if (loginLoader.status === Loader.Ready) {
             loginLoader.item.open();
         }
+    }
+
+    UserController {
+        id: userController
+
     }
     RowLayout {
         id: rowLayout
@@ -148,9 +154,11 @@ Window {
                         ColumnLayout {
                             Label {
                                 id: currentContactName
+
                                 property string selectedChatId: ""
+
                                 color: "white"
-                                text: selectedChatId == "" ? userController.chatList.getContactNameByID(selectedChatId) : ""
+                                text: selectedChatId != "" ? userController.chatList.getContactNameByID(selectedChatId) : ""
                             }
                             Label {
                                 color: "white"
@@ -183,11 +191,10 @@ Window {
 
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-                    model: selectedChatId == " " ? userController.chatList.getDialogModel(selectedChatId) : null
+                    model: selectedChatId != " " ? userController.chatList.getDialogModel(selectedChatId) : null
                     spacing: 5
 
-                    delegate: DialogDelegate {
-                    }
+                    delegate: DialogDelegate{}
                 }
                 Rectangle {
                     id: bottomChatBar
@@ -248,6 +255,9 @@ Window {
                             MouseArea {
                                 anchors.fill: parent
 
+                                onClicked: {
+                                    onClicked: userController.debugState();
+                                }
                             }
                         }
                         Rectangle {
@@ -287,11 +297,7 @@ Window {
             item.closed.connect(function () {
                 loginLoader.active = false;
             });
-            item.nameSubmitted.connect(onNameSubmitted)
+            item.nameSubmitted.connect(onNameSubmitted);
         }
     }
-    function onNameSubmitted(textValue){
-        onClicked: userController.Login(textValue)
-    }
 }
-

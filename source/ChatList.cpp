@@ -65,21 +65,6 @@ void ChatList::AddChat(const QString &identifier, bool isUuid, const QString& na
         {
             displayName = name;
         }
-        else
-        {
-            if (uuid.startsWith("temp_"))
-            {
-                displayName = "User (" + uuid.mid(5) + ")";
-            }
-            else if (uuid.startsWith("{"))
-            {
-                displayName = "User_" + uuid.mid(1, 8);
-            }
-            else
-            {
-                displayName = uuid;
-            }
-        }
     }
     else
     {
@@ -97,9 +82,8 @@ void ChatList::AddChat(const QString &identifier, bool isUuid, const QString& na
     endInsertRows();
 }
 
-DialogModel* ChatList::getDialogModel(QString chatId)
+DialogModel* ChatList::getDialogModel(const QString& chatId)
 {
-
     for (int i = 0; i < m_chats.size(); ++i) {
         if (m_chats[i].peerUuid == chatId) {
             return m_chats[i].dialogModel;

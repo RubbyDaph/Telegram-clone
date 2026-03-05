@@ -8,6 +8,8 @@
 #include <QJsonDocument>
 #include <QTimer>
 #include <QJsonObject>
+#include <QAbstractSocket>
+#include "MessageClass.h"
 
 class NetworkManager : public QObject
 {
@@ -21,13 +23,18 @@ public:
     bool StartP2PNode(quint16 preferredPort);
     void StopP2PNode();
 
-    void SendMessage(const QString& message, const QString& userAddress);
+    void SendMessage(MessageClass* message, const QString& userAddress);
     void sendPresenceStatus(const QString& peerId, bool isOnline);
     QString GetMyUuid() const {return myUuid;}
     bool IsRunning() const {return isRunning;}
     void SetUserInfo(const QString& uuid, const QString& username);
     void SetUuid(QString uuid);
     void SetUsername(QString username);
+
+    Q_INVOKABLE void debugPeers() {
+        qDebug() << "Active peers:" << activePeers.keys();
+    }
+
 signals:
     void ServerStarted();
     void ServerStartFail();
@@ -39,6 +46,7 @@ signals:
 
     void MessageReceived(const QString& peerAddress, const QString& message, const QDateTime& timestamp);
 private slots:
+    void onBroadcastReceived(QUdpSocket* socket);
     void onNewIncomingConnection();
     void onPeerReadyRead();
     void onUdpDataReceived();
@@ -47,6 +55,7 @@ private slots:
 public slots:
     void onUsernameChanged(const QString& newName);
 private:
+    QUdpSocket* m_broadcastListenSocket = nullptr;
     QTcpServer* tcpServer;
 
     QHash<QString, QTcpSocket*> activePeers;
@@ -63,7 +72,5 @@ private:
     void ProcessNetworkMessage(QTcpSocket* senderSocket, const QByteArray& data);
     void sendStatusPacket(const QString& peerId, bool status, const QString& type);
     void SendJsonToSocket(QTcpSocket* socket, const QJsonObject& json);
-    void SendHelloMessage(QTcpSocket* socket);
-
-
+    void SendHelloMessage(QTcpSocket* socket);;
 };

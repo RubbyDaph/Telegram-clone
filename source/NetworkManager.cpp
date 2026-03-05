@@ -64,24 +64,20 @@ bool NetworkManager::StartP2PNode(quint16 preferredPort)
         emit ServerStartFail();
         return false;
     }
-    qDebug() << "TCP server created";
 
     connect(tcpServer, &QTcpServer::newConnection,
             this, &NetworkManager::onNewIncomingConnection);
 
     if (preferredPort == 0) {
-
         if (!tcpServer->listen(QHostAddress::AnyIPv4, 0)) {
             tcpServer->deleteLater();
             tcpServer = nullptr;
             emit ServerStartFail();
             return false;
         }
-
         currentPort = tcpServer->serverPort();
     }
     else {
-
         bool listenSuccess = false;
         for (quint16 port = preferredPort; port < preferredPort + 10; port++) {
             if (tcpServer->listen(QHostAddress::AnyIPv4, port)) {
@@ -100,27 +96,112 @@ bool NetworkManager::StartP2PNode(quint16 preferredPort)
     }
 
 
+
+
+    const quint16 UDP_SEND_PORT = 45000;    // Порт для отправки
+    const quint16 UDP_RECV_PORT = 45001;    // Порт для приема
+
     udpSocket = new QUdpSocket(this);
     if (!udpSocket) {
+        emit ServerStartFail();
+        return false;
     }
-    else if (!udpSocket->bind(currentPort + 1, QUdpSocket::ShareAddress)) {
+
+    // Привязываем к порту отправки
+    if (!udpSocket->bind(QHostAddress::AnyIPv4, UDP_SEND_PORT, QUdpSocket::ShareAddress)) {
         udpSocket->deleteLater();
         udpSocket = nullptr;
+        emit ServerStartFail();
+        return false;
     }
-    else {
-        connect(udpSocket, &QUdpSocket::readyRead,
-                this, &NetworkManager::onUdpDataReceived);
 
-        QTimer* timer = new QTimer(this);
-        connect(timer, &QTimer::timeout, this, &NetworkManager::BroadcastPresence);
-        timer->start(5000);
+    // Включаем broadcast опцию
+    const int BROADCAST_OPTION = 1;
 
+    udpSocket->setSocketOption(static_cast<QAbstractSocket::SocketOption>(BROADCAST_OPTION), 1);
+
+    QUdpSocket* broadcastListenSocket = new QUdpSocket(this);
+
+    if (!broadcastListenSocket->bind(QHostAddress::AnyIPv4, UDP_RECV_PORT, QUdpSocket::ShareAddress)) {
+        broadcastListenSocket->deleteLater();
+    } else {
+        connect(broadcastListenSocket, &QUdpSocket::readyRead,
+                this, [this, broadcastListenSocket]() {
+                    this->onBroadcastReceived(broadcastListenSocket);
+                });
+
+        m_broadcastListenSocket = broadcastListenSocket;
     }
+
+    // Таймер для отправки broadcast (каждые 5 секунд)
+    QTimer* timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, [this]() {
+        if (!udpSocket) return;
+
+        QJsonObject broadcastMsg;
+        broadcastMsg["type"] = "discovery";
+        broadcastMsg["tcp_port"] = currentPort;
+        broadcastMsg["uuid"] = myUuid;
+        broadcastMsg["user_name"] = username;
+
+        QJsonDocument doc(broadcastMsg);
+        QByteArray data = doc.toJson();
+
+        // ВАЖНО: отправляем на ПОРТ ПРИЕМА (45001)
+        QHostAddress broadcastAddr = QHostAddress::Broadcast;
+        quint16 targetPort = 45001;
+
+        qint64 sent = udpSocket->writeDatagram(data, broadcastAddr, targetPort);
+    });
+    timer->start(5000);
 
     isRunning = true;
     emit ServerStarted();
 
     return true;
+}
+
+void NetworkManager::onBroadcastReceived(QUdpSocket* socket)
+{
+
+    while (socket->hasPendingDatagrams())
+    {
+        QByteArray datagram;
+        datagram.resize(socket->pendingDatagramSize());
+
+        QHostAddress senderAddress;
+        quint16 senderPort;
+
+        qint64 bytesRead = socket->readDatagram(datagram.data(), datagram.size(),
+                                                &senderAddress, &senderPort);
+
+        QJsonDocument doc = QJsonDocument::fromJson(datagram);
+        if (doc.isNull()) continue;
+
+        QJsonObject json = doc.object();
+        QString type = json["type"].toString();
+
+        if (type == "discovery")
+        {
+            QString peerUuid = json["uuid"].toString();
+            quint16 peerTcpPort = json["tcp_port"].toInt();
+            QString peerName = json["user_name"].toString();
+
+            if (peerUuid == myUuid) continue;
+
+            bool alreadyConnected = false;
+            for (const QString& connectedPeerId : activePeers.keys()) {
+                if (connectedPeerId == peerUuid) {
+                    alreadyConnected = true;
+                    break;
+                }
+            }
+
+            if (!alreadyConnected && isRunning) {
+                ConnectToPeer(senderAddress.toString(), peerTcpPort);
+            }
+        }
+    }
 }
 
 void NetworkManager::StopP2PNode()
@@ -164,11 +245,16 @@ void NetworkManager::BroadcastPresence()
     broadcastMsg["type"] = "discovery";
     broadcastMsg["tcp_port"] = currentPort;
     broadcastMsg["uuid"] = myUuid;
+    broadcastMsg["user_name"] = username;
 
     QJsonDocument doc(broadcastMsg);
     QByteArray data = doc.toJson();
 
     udpSocket->writeDatagram(data, QHostAddress::Broadcast, currentPort);
+
+    QHostAddress broadcastAddr = QHostAddress::Broadcast;
+    quint16 targetPort = udpSocket->localPort(); // ВАЖНО: отправляем на тот же порт
+    qint64 sent = udpSocket->writeDatagram(data, broadcastAddr, targetPort);
 }
 
 void NetworkManager::ProcessNetworkMessage(QTcpSocket* senderSocket, const QByteArray& data)
@@ -187,9 +273,13 @@ void NetworkManager::ProcessNetworkMessage(QTcpSocket* senderSocket, const QByte
         }
     }
 
+
     if (type == "hello") {
         QString peerUuid = json["uuid"].toString();
         QString peerName = json["user_name"].toString();
+        quint16 peerTcpPort = json["tcp_port"].toInt(); // УБЕДИТЕСЬ, ЧТО ЭТОТ ПОРТ ПЕРЕДАЕТСЯ!
+
+
         if (!peerUuid.isEmpty() && peerId.startsWith("temp_")) {
             QTcpSocket* socket = activePeers.take(peerId);
             activePeers.insert(peerUuid, socket);
@@ -200,9 +290,13 @@ void NetworkManager::ProcessNetworkMessage(QTcpSocket* senderSocket, const QByte
         }
     }
     else if (type == "text") {
+
+
         QString message = json["message"].toString();
+        QString from = json["from"].toString();
         QDateTime timestamp = QDateTime::fromString(json["timestamp"].toString(), Qt::ISODate);
-        emit MessageReceived(peerId, message, timestamp);
+
+        emit MessageReceived(from, message, timestamp);
     }
     else if (type == "presence") {
         bool isOnline = json["status"].toBool();
@@ -232,6 +326,7 @@ void NetworkManager::onPeerReadyRead()
     while (true) {
         if (socket->bytesAvailable() < 4) return;
 
+
         QByteArray sizeData = socket->peek(4);
         QDataStream sizeStream(sizeData);
         sizeStream.setByteOrder(QDataStream::BigEndian);
@@ -240,8 +335,11 @@ void NetworkManager::onPeerReadyRead()
 
         if (socket->bytesAvailable() < 4 + messageSize) return;
 
+
         socket->read(4);
         QByteArray messageData = socket->read(messageSize);
+
+
 
         ProcessNetworkMessage(socket, messageData);
     }
@@ -324,25 +422,19 @@ void NetworkManager::onPeerDisconnected(QTcpSocket* socket)
 
 
 
-void NetworkManager::SendMessage(const QString &message, const QString &userAddress)
+void NetworkManager::SendMessage(MessageClass* message, const QString &userAddress)
 {
-    if (!activePeers.contains(userAddress)) {
-        qDebug() << "Peer not found:" << userAddress;
-        return;
-    }
-
+    if (!activePeers.contains(userAddress)) return;
     QTcpSocket* socket = activePeers.value(userAddress);
 
     QJsonObject msg;
     msg["type"] = "text";
     msg["from"] = myUuid;
-    msg["message"] = message;
+    msg["message"] = message->Get_content();
     msg["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
     SendJsonToSocket(socket, msg);
 }
-
-
 
 
 void NetworkManager::onNewIncomingConnection()
@@ -381,28 +473,21 @@ void NetworkManager::onNewIncomingConnection()
 
 void NetworkManager::SendJsonToSocket(QTcpSocket* socket, const QJsonObject& json)
 {
-    if (!socket || !socket->isOpen())
-    {
-        qDebug() << "Socket is not open or invalid";
-        return;
-    }
+    if (!socket || !socket->isOpen()) return;
 
     QJsonDocument doc(json);
     QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
 
-    // Исправлено: кросс-платформенная запись размера
     quint32 messageSize = jsonData.size();
     QByteArray sizeData;
     QDataStream sizeStream(&sizeData, QIODevice::WriteOnly);
     sizeStream.setByteOrder(QDataStream::BigEndian);
     sizeStream << messageSize;
 
+    QByteArray packet = sizeData + jsonData;
+
     qint64 bytesWritten = socket->write(sizeData + jsonData);
 
-    if (bytesWritten == -1)
-    {
-        qDebug() << "Failed to send message:" << socket->errorString();
-    }
 }
 
 void NetworkManager::onUsernameChanged(const QString& newName)
@@ -430,6 +515,14 @@ void NetworkManager::onUdpDataReceived()
 {
     if (!udpSocket) return;
 
+
+    static bool firstTime = true;
+    if (firstTime) {
+        firstTime = false;
+    }
+
+    if (!udpSocket) return;
+
     while (udpSocket->hasPendingDatagrams())
     {
         QByteArray datagram;
@@ -437,28 +530,39 @@ void NetworkManager::onUdpDataReceived()
 
         QHostAddress senderAddress;
         quint16 senderPort;
+
+
         qint64 bytesRead = udpSocket->readDatagram(datagram.data(), datagram.size(), &senderAddress, &senderPort);
+
 
         if (bytesRead <= 0) continue;
         QJsonDocument doc = QJsonDocument::fromJson(datagram);
-        if (doc.isNull()) continue;
-
+        if (doc.isNull())
+        {
+            continue;
+        }
         QJsonObject json = doc.object();
+
         QString type = json["type"].toString();
 
         if (type == "discovery")
         {
             QString peerUuid = json["uuid"].toString();
             quint16 peerTcpPort = json["tcp_port"].toInt();
+            QString peerName = json["user_name"].toString();
 
-            if (peerUuid == myUuid) continue;
+
+            if (peerUuid == myUuid) {
+                continue;
+            }
 
             bool alreadyConnected = false;
-            for (const QString& connectedPeerId : activePeers.keys())
-            {
-                if (connectedPeerId == peerUuid || (connectedPeerId.startsWith("temp_") &&
-                    connectedPeerId.contains(senderAddress.toString())))
-                {
+            for (const QString& connectedPeerId : activePeers.keys()) {
+                if (connectedPeerId == peerUuid) {
+                    alreadyConnected = true;
+                    break;
+                }
+                if (connectedPeerId.contains(senderAddress.toString())) {
                     alreadyConnected = true;
                     break;
                 }
@@ -486,3 +590,4 @@ void NetworkManager::SetUsername(QString username)
 {
     this->username = username;
 }
+

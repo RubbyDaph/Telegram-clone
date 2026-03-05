@@ -36,17 +36,19 @@ UserController::UserController(QObject *parent)
     }
 
 
-    connect(this, &UserController::DialogModelChanged, dialogModel, &DialogModel::OnDialogModelChanged);
+
     connect(networkManager, &NetworkManager::MessageReceived, this, &UserController::OnMessageReceived);
     connect(networkManager, &NetworkManager::peerPresenceChanged, this, &UserController::onPeerPresenceChanged);
     connect(networkManager, &NetworkManager::PeerConnected, this, &UserController::OnPeerConnected);
     connect(networkManager, &NetworkManager::PeerDisconnected, this, &UserController::OnPeerDisconnected);
+    connect(this, &UserController::DialogModelChanged, dialogModel, &DialogModel::OnDialogModelChanged);
     connect(this, &UserController::UsernameChangedForNetwork, networkManager, &NetworkManager::onUsernameChanged);
 }
 
 
 void UserController::SetCurrentChat(const QString &chatID)
 {
+    currentChatId = chatID;
     dialogModel = chatList->getDialogModel(chatID);
 
     emit DialogModelChanged(dialogModel);
@@ -54,14 +56,11 @@ void UserController::SetCurrentChat(const QString &chatID)
 
 void UserController::StartMessaging()
 {
-    qDebug() << "StartMessaging called";
 
     bool started = networkManager->StartP2PNode(0);
 
     if (!started) {
         emit ConnectionFail("Failed to start P2P node - no available ports");
-    } else {
-        qDebug() << "P2P node started successfully";
     }
 }
 
@@ -98,6 +97,7 @@ bool UserController::IsLoggedIn() const
 
 void UserController::SendMessage(const QString &message)
 {
+
     if (!dialogModel || message.trimmed().isEmpty()) return;
 
     MessageClass* newMessage = new MessageClass(
@@ -108,7 +108,9 @@ void UserController::SendMessage(const QString &message)
     );
 
     dialogModel->AddMessage(newMessage);
+    networkManager->SendMessage(newMessage, GetCurrentChatId());
     QString messageId = QUuid::createUuid().toString();
+
     emit MessageSent(message, messageId, true);
 }
 
@@ -118,19 +120,10 @@ void UserController::OnMessageReceived(const QString& peerUuid, const QString& m
 
     int chatIndex = chatList->findChatById(peerUuid);
 
-    DialogModel* targetDialogModel = nullptr;
+    DialogModel* targetDialogModel = chatList->getDialogModel(peerUuid);
 
-    if (chatIndex != -1) return;
 
-    QString senderName;
-
-    if (peerUuid.startsWith("temp_")) {
-        senderName = "User (" + peerUuid.mid(5) + ")";
-    } else if (peerUuid.startsWith("{")) {
-        senderName = "User_" + peerUuid.mid(1, 8);
-    } else {
-        senderName = peerUuid;
-    }
+    QString senderName = chatList->getContactNameByID(peerUuid);
 
     MessageClass* receivedMessage = new MessageClass(
         senderName,
@@ -139,12 +132,11 @@ void UserController::OnMessageReceived(const QString& peerUuid, const QString& m
         false
     );
 
-    if (chatList->getDialogModel(peerUuid)) {
-        dialogModel->AddMessage(receivedMessage);
+        targetDialogModel->AddMessage(receivedMessage);
         chatList->updateLastMessage(chatIndex, message, senderName);
-    }
 
-    emit MessageReceived(message, senderName);
+
+    if (dialogModel == targetDialogModel) emit DialogModelChanged(dialogModel);
 }
 
 void UserController::onPeerPresenceChanged(const QString& peerId, bool isOnline)
@@ -180,7 +172,6 @@ void UserController::SetUsername(const QString &name)
         QSettings settings;
         settings.setValue("user/name", name);
 
-        qDebug() << "User name set to:" << name;
         emit UsernameChanged();
         emit UsernameChangedForNetwork(name);
     }
@@ -188,8 +179,7 @@ void UserController::SetUsername(const QString &name)
 
 void UserController::OnPeerConnected(const QString &peerID, const QString &peerAddress, const QString &peerName)
 {
-    qDebug() << "Peer connected - ID:" << peerID
-            << "Name:" << peerName;
+
 
     int chatIndex = chatList->findChatById(peerID);
 
@@ -210,4 +200,9 @@ void UserController::OnPeerDisconnected(const QString &peerID, const QString &pe
 QString UserController::GetCurrentUsername() const
 {
     return username;
+}
+
+QString UserController::GetCurrentChatId() const
+{
+    return currentChatId;
 }

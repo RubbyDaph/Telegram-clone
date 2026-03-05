@@ -13,6 +13,7 @@ class UserController : public QObject
     Q_PROPERTY(ChatList* chatList READ GetChatList CONSTANT)
     Q_PROPERTY(DialogModel* dialogModel READ GetDialogModel CONSTANT)
     Q_PROPERTY(QString username READ GetUsername WRITE SetUsername NOTIFY UsernameChanged)
+    Q_PROPERTY(QString currentChatId READ GetCurrentChatId)
 public:
     explicit UserController(QObject *parent = nullptr);
 
@@ -23,11 +24,14 @@ public:
     Q_INVOKABLE void Logout();
     Q_INVOKABLE bool IsLoggedIn() const;
     Q_INVOKABLE QString GetCurrentUsername() const;
+    Q_INVOKABLE QString GetCurrentChatId() const;
 
     Q_INVOKABLE void StartMessaging();
     Q_INVOKABLE void SetCurrentChat(const QString& chatID);
     Q_INVOKABLE void SendMessage(const QString& message);
     Q_INVOKABLE void CreateChat(const QString& contactName);
+
+
     void SetUsername(const QString& name);
     QString GetUsername() const {return username;}
 private slots:
@@ -51,4 +55,5 @@ private:
     MessageClass* messageClass;
     QString username;
     QString myUuid;
+    QString currentChatId;
 };

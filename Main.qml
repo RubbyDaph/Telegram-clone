@@ -63,6 +63,11 @@ Window {
                         Layout.rightMargin: 16
                         color: "#434552"
                         radius: 32
+                        Label{
+                            color: "white"
+                            anchors.centerIn: parent
+                            text: "Select the chat"
+                        }
                     }
                 }
                 Rectangle {
@@ -156,13 +161,13 @@ Window {
                                 id: currentContactName
 
                                 property string selectedChatId: ""
-
+                                Layout.topMargin: 3
                                 color: "white"
                                 text: selectedChatId != "" ? userController.chatList.getContactNameByID(selectedChatId) : ""
                             }
                             Label {
                                 color: "white"
-                                text: currentContactName.selectedChatId == "" ? "last seen online" : ""
+                                text: currentContactName.selectedChatId != "" ? "online" : ""
                             }
                         }
                         Rectangle {
@@ -171,16 +176,6 @@ Window {
                             Layout.fillHeight: true
                             Layout.fillWidth: true
                             opacity: 0
-                        }
-                        Rectangle {
-                            id: searchIcon
-
-                            Layout.maximumHeight: 20
-                            Layout.maximumWidth: 15
-                            Layout.minimumHeight: 20
-                            Layout.minimumWidth: 15
-                            Layout.preferredHeight: 20
-                            Layout.preferredWidth: 15
                         }
                     }
                 }
@@ -215,16 +210,6 @@ Window {
                             leftMargin: 14
                             rightMargin: 7
                         }
-                        Rectangle {
-                            Layout.alignment: Qt.AlignBottom
-                            Layout.bottomMargin: 10
-                            Layout.maximumHeight: 20
-                            Layout.maximumWidth: 16
-                            Layout.minimumHeight: 20
-                            Layout.minimumWidth: 16
-                            Layout.preferredHeight: 20
-                            Layout.preferredWidth: 16
-                        }
                         TextInput {
                             id: messageTextInput
 
@@ -239,26 +224,6 @@ Window {
                                 color: "#aaa"
                                 text: messageTextInput.placeholderText
                                 visible: !messageTextInput.text
-                            }
-                        }
-                        Rectangle {
-                            id: emojiButton
-
-                            Layout.alignment: Qt.AlignBottom
-                            Layout.bottomMargin: 10
-                            Layout.maximumHeight: 20
-                            Layout.maximumWidth: 20
-                            Layout.minimumHeight: 20
-                            Layout.minimumWidth: 20
-                            Layout.preferredHeight: 20
-                            Layout.preferredWidth: 20
-
-                            MouseArea {
-                                anchors.fill: parent
-
-                                onClicked: {
-                                    onClicked: userController.CreateChat("Kirill");
-                                }
                             }
                         }
                         Image {

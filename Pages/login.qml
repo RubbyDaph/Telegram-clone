@@ -24,6 +24,7 @@ Dialog {
     background: Rectangle {
         anchors.fill: parent
         color: addUser.dialogBackground
+        radius: 10
     }
     contentItem: ColumnLayout {
         id: contentLayout
@@ -34,6 +35,14 @@ Dialog {
             id: contentSpacer1
 
             Layout.fillHeight: true
+        }
+
+        Label{
+            Layout.alignment: Qt.AlignCenter | Qt.AlignVCenter
+            Layout.bottomMargin: 10
+            color: "white"
+            text: "Enter your name"
+
         }
         Rectangle {
             Layout.alignment: Qt.AlignCenter | Qt.AlignVCenter
@@ -98,6 +107,7 @@ Dialog {
         background: Rectangle {
             anchors.fill: parent
             color: addUser.dialogBackground
+            radius: 10
         }
 
         RowLayout {
@@ -113,6 +123,7 @@ Dialog {
             Label {
                 id: label
 
+                Layout.topMargin: 10
                 Layout.alignment: Qt.AlignCenter | Qt.AlignVCenter
                 color: "white"
                 text: "Login menu"

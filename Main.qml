@@ -194,7 +194,8 @@ Window {
                     model: selectedChatId != " " ? userController.chatList.getDialogModel(selectedChatId) : null
                     spacing: 5
 
-                    delegate: DialogDelegate{}
+                    delegate: DialogDelegate {
+                    }
                 }
                 Rectangle {
                     id: bottomChatBar
@@ -260,9 +261,10 @@ Window {
                                 }
                             }
                         }
-                        Rectangle {
+                        Image {
                             id: sendButton
 
+                            Layout.rightMargin: 5
                             Layout.alignment: Qt.AlignBottom
                             Layout.bottomMargin: 10
                             Layout.maximumHeight: 20
@@ -271,6 +273,8 @@ Window {
                             Layout.minimumWidth: 20
                             Layout.preferredHeight: 20
                             Layout.preferredWidth: 20
+                            fillMode: Image.PreserveAspectCrop
+                            source: "qrc:/icons/sendArrow.png"
 
                             MouseArea {
                                 anchors.fill: parent

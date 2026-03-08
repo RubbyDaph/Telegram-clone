@@ -4,5 +4,6 @@
         <file>ChatsDelegate.qml</file>
         <file>DialogDelegate.qml</file>
         <file>Pages/login.qml</file>
+        <file>icons/sendArrow.png</file>
     </qresource>
 </RCC>

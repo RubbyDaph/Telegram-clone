@@ -256,7 +256,7 @@ Window {
                                 anchors.fill: parent
 
                                 onClicked: {
-                                    onClicked: userController.debugState();
+                                    onClicked: userController.CreateChat("Kirill");
                                 }
                             }
                         }

@@ -5,7 +5,8 @@ Rectangle {
     id: message
     implicitWidth: content.width + 20
     implicitHeight: content.height + 10
-    color: "#161727"
+    color: model.isOwnMessage == false ? "#161727" : "#4784ad"
+
     radius: 20
     ColumnLayout {
         anchors.fill: parent

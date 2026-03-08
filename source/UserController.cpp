@@ -186,7 +186,7 @@ void UserController::OnPeerConnected(const QString &peerID, const QString &peerA
     if (chatIndex == -1) {
         QString displayName = !peerName.isEmpty() ? peerName : "User_" + peerID.mid(1, 8);
 
-        chatList->AddChat(peerID, true, displayName);
+        chatList->AddChat(peerID, true, peerName);
     }
 
     emit ConnectionStatusChange(true);

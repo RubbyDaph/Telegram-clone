@@ -177,7 +177,7 @@ void UserController::SetUsername(const QString &name)
     }
 }
 
-void UserController::OnPeerConnected(const QString &peerID, const QString &peerName)
+void UserController::OnPeerConnected(const QString &peerID, const QString &peerAddress, const QString &peerName)
 {
 
     if (peerID.startsWith("temp_")) return;

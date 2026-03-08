@@ -286,7 +286,7 @@ void NetworkManager::ProcessNetworkMessage(QTcpSocket* senderSocket, const QByte
 
             QString peerAddress = socket->peerAddress().toString() + ":" + QString::number(socket->peerPort());
 
-            emit PeerConnected(peerUuid, peerName);
+            emit PeerConnected(peerUuid, peerAddress, peerName);
         }
     }
     else if (type == "text") {
@@ -395,7 +395,7 @@ void NetworkManager::onPeerConnected(QTcpSocket* socket)
         socket->write(sizeData + jsonData);
     }
 
-    emit PeerConnected(tempPeerId, socket->peerName());
+    emit PeerConnected(tempPeerId, socket->peerAddress().toString());
 }
 
 void NetworkManager::onPeerDisconnected(QTcpSocket* socket)
@@ -468,7 +468,7 @@ void NetworkManager::onNewIncomingConnection()
 
     QString peerAddress = newSocket->peerAddress().toString() + ":" +
                           QString::number(newSocket->peerPort());
-    emit PeerConnected(tempPeerId, username);
+    emit PeerConnected(tempPeerId, peerAddress);
 }
 
 void NetworkManager::SendJsonToSocket(QTcpSocket* socket, const QJsonObject& json)

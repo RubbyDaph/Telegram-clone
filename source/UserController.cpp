@@ -177,17 +177,17 @@ void UserController::SetUsername(const QString &name)
     }
 }
 
-void UserController::OnPeerConnected(const QString &peerID, const QString &peerAddress, const QString &peerName)
+void UserController::OnPeerConnected(const QString &peerID, const QString &peerName)
 {
 
+    if (peerID.startsWith("temp_")) return;
 
     int chatIndex = chatList->findChatById(peerID);
 
-    if (chatIndex == -1) {
-        QString displayName = !peerName.isEmpty() ? peerName : "User_" + peerID.mid(1, 8);
+    if (chatIndex == -1) return;
 
-        chatList->AddChat(peerID, true, displayName);
-    }
+    chatList->AddChat(peerID, true, peerName);
+
 
     emit ConnectionStatusChange(true);
 }

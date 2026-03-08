@@ -11,7 +11,8 @@ set(CMAKE_AUTOUIC ON)
 set(QT_QML_GENERATE_QMLLS_INI ON)
 
 if(WIN32)
-    set(CMAKE_PREFIX_PATH "C:/Qt/6.10.2/mingw_64" CACHE STRING "Qt installation path")
+    set(CMAKE_PREFIX_PATH "C:/Qt/6.10.2/mingw_64" CACHE STRING "Qt installation path") # unlucky i'm a noob and i
+                                                                       # don't want to do thing for different dirs
 
     find_package(Qt6 REQUIRED COMPONENTS Core Quick Network Gui Qml)
 
@@ -74,7 +75,7 @@ if(WIN32)
     )
 endif()
 
-# Копируем DLL Qt в папку сборки
+# Copy dll files for windows, AND FOR LINUX i don't need to do it, because linux is better
 if(WIN32)
     find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${CMAKE_PREFIX_PATH}/bin")
     if(WINDEPLOYQT_EXECUTABLE)

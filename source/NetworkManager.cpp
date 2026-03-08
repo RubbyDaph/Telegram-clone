@@ -98,16 +98,14 @@ bool NetworkManager::StartP2PNode(quint16 preferredPort)
 
 
 
-    const quint16 UDP_SEND_PORT = 45000;    // Порт для отправки
-    const quint16 UDP_RECV_PORT = 45001;    // Порт для приема
+    const quint16 UDP_SEND_PORT = 45000;    // port to send
+    const quint16 UDP_RECV_PORT = 45001;    // port to receive
 
     udpSocket = new QUdpSocket(this);
     if (!udpSocket) {
         emit ServerStartFail();
         return false;
     }
-
-    // Привязываем к порту отправки
     if (!udpSocket->bind(QHostAddress::AnyIPv4, UDP_SEND_PORT, QUdpSocket::ShareAddress)) {
         udpSocket->deleteLater();
         udpSocket = nullptr;
@@ -115,7 +113,6 @@ bool NetworkManager::StartP2PNode(quint16 preferredPort)
         return false;
     }
 
-    // Включаем broadcast опцию
     const int BROADCAST_OPTION = 1;
 
     udpSocket->setSocketOption(static_cast<QAbstractSocket::SocketOption>(BROADCAST_OPTION), 1);
@@ -133,7 +130,6 @@ bool NetworkManager::StartP2PNode(quint16 preferredPort)
         m_broadcastListenSocket = broadcastListenSocket;
     }
 
-    // Таймер для отправки broadcast (каждые 5 секунд)
     QTimer* timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, [this]() {
         if (!udpSocket) return;
@@ -253,7 +249,7 @@ void NetworkManager::BroadcastPresence()
     udpSocket->writeDatagram(data, QHostAddress::Broadcast, currentPort);
 
     QHostAddress broadcastAddr = QHostAddress::Broadcast;
-    quint16 targetPort = udpSocket->localPort(); // ВАЖНО: отправляем на тот же порт
+    quint16 targetPort = udpSocket->localPort();
     qint64 sent = udpSocket->writeDatagram(data, broadcastAddr, targetPort);
 }
 
@@ -277,16 +273,13 @@ void NetworkManager::ProcessNetworkMessage(QTcpSocket* senderSocket, const QByte
     if (type == "hello") {
         QString peerUuid = json["uuid"].toString();
         QString peerName = json["user_name"].toString();
-        quint16 peerTcpPort = json["tcp_port"].toInt(); // УБЕДИТЕСЬ, ЧТО ЭТОТ ПОРТ ПЕРЕДАЕТСЯ!
 
 
-        if (!peerUuid.isEmpty() && peerId.startsWith("temp_")) {
+        if (!peerUuid.isEmpty() && !peerId.startsWith("temp_")) {
             QTcpSocket* socket = activePeers.take(peerId);
             activePeers.insert(peerUuid, socket);
 
-            QString peerAddress = socket->peerAddress().toString() + ":" + QString::number(socket->peerPort());
-
-            emit PeerConnected(peerUuid, peerAddress, peerName);
+            emit PeerConnected(peerUuid, peerName);
         }
     }
     else if (type == "text") {
@@ -395,7 +388,7 @@ void NetworkManager::onPeerConnected(QTcpSocket* socket)
         socket->write(sizeData + jsonData);
     }
 
-    emit PeerConnected(tempPeerId, socket->peerAddress().toString());
+    emit PeerConnected(tempPeerId, socket->peerName());
 }
 
 void NetworkManager::onPeerDisconnected(QTcpSocket* socket)
@@ -468,7 +461,7 @@ void NetworkManager::onNewIncomingConnection()
 
     QString peerAddress = newSocket->peerAddress().toString() + ":" +
                           QString::number(newSocket->peerPort());
-    emit PeerConnected(tempPeerId, peerAddress);
+    emit PeerConnected(tempPeerId, username);
 }
 
 void NetworkManager::SendJsonToSocket(QTcpSocket* socket, const QJsonObject& json)

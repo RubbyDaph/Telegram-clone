@@ -41,7 +41,7 @@ signals:
 
     void peerPresenceChanged(const QString& peerId, bool isOnline);
 
-    void PeerConnected(const QString& peerID, const QString& peerAddress, const QString& peerName = "");
+    void PeerConnected(const QString& peerID, const QString& peerName = "");
     void PeerDisconnected(const QString& peerID, const QString& peerAddress);
 
     void MessageReceived(const QString& peerAddress, const QString& message, const QDateTime& timestamp);

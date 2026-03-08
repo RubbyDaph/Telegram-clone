@@ -38,7 +38,7 @@ private slots:
     void OnMessageReceived(const QString& peerUuid, const QString& message, const QDateTime& timestamp);
     void onPeerPresenceChanged(const QString& peerId, bool isOnline);
     void OnConnectionFail(const QString& reason);
-    void OnPeerConnected(const QString& peerID, const QString& peerAddress, const QString& peerName);
+    void OnPeerConnected(const QString& peerID, const QString& peerName);
     void OnPeerDisconnected(const QString& peerID, const QString& peerAddress);
 signals:
     void MessageReceived(const QString& message, const QString senderName);

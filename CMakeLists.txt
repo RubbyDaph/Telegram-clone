@@ -15,6 +15,22 @@ if(WIN32)
 
     find_package(Qt6 REQUIRED COMPONENTS Core Quick Network Gui Qml)
 
+    target_compile_definitions(appTelegramCloneQML PRIVATE
+            _WIN32_WINNT=0x0A00
+            WIN32_LEAN_AND_MEAN
+            NOMINMAX
+    )
+
+    set_target_properties(appTelegramCloneQML PROPERTIES
+            WIN32_EXECUTABLE FALSE
+    )
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${CMAKE_PREFIX_PATH}/bin")
+    if(WINDEPLOYQT_EXECUTABLE)
+        add_custom_command(TARGET appTelegramCloneQML POST_BUILD
+                COMMAND ${WINDEPLOYQT_EXECUTABLE} --qmldir ${CMAKE_CURRENT_SOURCE_DIR} $<TARGET_FILE:appTelegramCloneQML>
+                COMMENT "Deploying Qt libraries..."
+        )
+    endif()
 else()
     find_package(Qt6 REQUIRED COMPONENTS Core Quick Qml Network Gui)
 endif()

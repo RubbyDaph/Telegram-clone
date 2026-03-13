@@ -14,7 +14,7 @@ I made UI looking like Telegram. But i'ts really bare bones, not a lot of featur
 # Screenshots:
 
  ![Linux view](Screenshots/LinuxScreenshot.jpg)
- ![Windows view](Screenshots/LinuxScreenshot.jpg)
+ ![Windows view](Screenshots/WindowsScreenshot.jpg)
 
 # Dependencies: 
 

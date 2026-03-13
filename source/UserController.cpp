@@ -179,16 +179,10 @@ void UserController::SetUsername(const QString &name)
 
 void UserController::OnPeerConnected(const QString &peerID, const QString &peerAddress, const QString &peerName)
 {
-    if (peerID.startsWith("temp_")) {
-        qDebug() << "⏳ Temporary connection, waiting for hello";
-        return;
-    }
+    if (peerID.startsWith("temp_")) return;
 
     int existing = chatList->findChatById(peerID);
-    if (existing != -1) {
-        qDebug() << "Chat already exists for" << peerID;
-        return;
-    }
+    if (existing != -1) return;
     chatList->AddChat(peerID, true, peerName);
     emit ConnectionStatusChange(true);
 }
